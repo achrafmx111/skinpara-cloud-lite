@@ -1,0 +1,142 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    restart: unless-stopped
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [skinpara-lite]
+
+  skinpara-catalog-service:
+    build: ./catalog-service
+    restart: unless-stopped
+    mem_limit: 160m
+    environment:
+      PORT: "8792"
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8792/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [skinpara-lite]
+
+  skinpara-ai-bridge:
+    build: ./ai-bridge
+    restart: unless-stopped
+    mem_limit: 320m
+    depends_on:
+      redis:
+        condition: service_healthy
+      skinpara-catalog-service:
+        condition: service_started
+    environment:
+      PORT: "8787"
+      SKINPARA_CHANNEL_MODE: "kapso_direct"
+      SKINPARA_DIRECT_INTERNAL_TOKEN: ${SKINPARA_DIRECT_INTERNAL_TOKEN:-}
+      SKINPARA_DIRECT_INBOUND_QUEUE: "skinpara:cloud-lite:kapso-direct:inbound"
+      SKINPARA_DIRECT_OUTBOUND_QUEUE: "skinpara:cloud-lite:kapso-direct:outbound"
+      CHATWOOT_BASE_URL: ${CHATWOOT_BASE_URL:-http://rails:8080}
+      CHATWOOT_ACCOUNT_ID: ${CHATWOOT_ACCOUNT_ID:-}
+      CHATWOOT_API_TOKEN: ${CHATWOOT_API_TOKEN:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: "nvidia/nemotron-3-super-120b-a12b:free"
+      SKINPARA_AI_ENABLED: "true"
+      SKINPARA_CATALOG_RAG_ENABLED: "true"
+      SKINPARA_CATALOG_URL: "http://skinpara-catalog-service:8792"
+      SKINPARA_CATALOG_MAX_PRODUCTS: "5"
+      SKINPARA_CATALOG_TIMEOUT_MS: "8000"
+      SKINPARA_REDIS_HOST: "redis"
+      SKINPARA_REDIS_PORT: "6379"
+      SKINPARA_QUEUE_NAME: "skinpara:cloud-lite:queue"
+      SKINPARA_QUEUE_RETRIES: "2"
+      SKINPARA_CONVERSATION_LOCK_SECONDS: "60"
+      SKINPARA_WORKERS: "2"
+      SKINPARA_CHATWOOT_WEBHOOK_AUTH_ENABLED: "true"
+      SKINPARA_CHATWOOT_WEBHOOK_SECRET: ${SKINPARA_CHATWOOT_WEBHOOK_SECRET:-}
+      SKINPARA_CHATWOOT_WEBHOOK_MAX_AGE_SEC: "300"
+      SKINPARA_ORDER_MODE: "test"
+      SKINPARA_SHOPIFY_ENABLED: "false"
+      SHOPIFY_SHOP: ${SHOPIFY_SHOP:-}
+      SHOPIFY_CLIENT_ID: ${SHOPIFY_CLIENT_ID:-}
+      SHOPIFY_CLIENT_SECRET: ${SHOPIFY_CLIENT_SECRET:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SKINPARA_SUPABASE_ENABLED: ${SKINPARA_SUPABASE_ENABLED:-true}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [skinpara-lite]
+
+  skinpara-control-center:
+    build: ./control-center
+    restart: unless-stopped
+    mem_limit: 320m
+    depends_on:
+      redis:
+        condition: service_healthy
+      skinpara-ai-bridge:
+        condition: service_started
+    environment:
+      PORT: "8790"
+      SKINPARA_CHANNEL_MODE: "kapso_direct"
+      SKINPARA_DIRECT_INTERNAL_TOKEN: ${SKINPARA_DIRECT_INTERNAL_TOKEN:-}
+      SKINPARA_DIRECT_CUSTOMER_KEY_SECRET: ${SKINPARA_DIRECT_CUSTOMER_KEY_SECRET:-}
+      SKINPARA_DIRECT_OUTBOUND_QUEUE: "skinpara:cloud-lite:kapso-direct:outbound"
+      CHATWOOT_INTERNAL_URL: ${CHATWOOT_INTERNAL_URL:-http://rails:8080}
+      CHATWOOT_ACCOUNT_ID: ${CHATWOOT_ACCOUNT_ID:-}
+      CHATWOOT_API_TOKEN: ${CHATWOOT_API_TOKEN:-}
+      SKINPARA_BRIDGE_URL: "http://skinpara-ai-bridge:8787"
+      SKINPARA_CATALOG_URL: "http://skinpara-catalog-service:8792"
+      REDIS_URL: "redis://redis:6379"
+      KAPSO_API_KEY: ${KAPSO_API_KEY:-}
+      KAPSO_WEBHOOK_SECRET: ${KAPSO_WEBHOOK_SECRET:-}
+      KAPSO_SANDBOX_ENABLED: "true"
+      KAPSO_SANDBOX_OUTBOUND_ENABLED: "false"
+      KAPSO_SANDBOX_PHONE_NUMBER_ID: ${KAPSO_SANDBOX_PHONE_NUMBER_ID:-}
+      KAPSO_SANDBOX_ALLOWED_TO: ${KAPSO_SANDBOX_ALLOWED_TO:-}
+      SKINPARA_ORDER_MODE: "test"
+      SKINPARA_WHATSAPP_LIVE_ENABLED: "false"
+      SKINPARA_CAMPAIGN_LIVE_ENABLED: "false"
+      SKINPARA_DELIVERY_LIVE_ENABLED: "false"
+      SKINPARA_SUPABASE_ENABLED: ${SKINPARA_SUPABASE_ENABLED:-true}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8790/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [skinpara-lite]
+
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    mem_limit: 96m
+    depends_on:
+      skinpara-control-center:
+        condition: service_started
+      skinpara-ai-bridge:
+        condition: service_started
+    volumes:
+      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "${PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      skinpara-lite: {}
+
+networks:
+  skinpara-lite:
+    driver: bridge

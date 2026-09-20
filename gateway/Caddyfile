@@ -1,0 +1,27 @@
+{
+  admin off
+}
+
+:8080 {
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "no-referrer"
+    -Server
+  }
+
+  handle /healthz {
+    respond "ok" 200
+  }
+
+  @kapso_inbound {
+    method POST
+    path /api/kapso/webhook
+  }
+  handle @kapso_inbound {
+    reverse_proxy skinpara-control-center:8790
+  }
+
+  handle {
+    respond "not found" 404
+  }
+}

@@ -1,0 +1,3601 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>SkinPara Control Center</title>
+
+<style>
+
+:root{
+  --bg:#f3f5f9;
+  --surface:#ffffff;
+  --surface-soft:#f8fafc;
+  --border:#e8ecf2;
+  --text:#171b24;
+  --muted:#8b93a3;
+  --blue:#246bfd;
+  --blue-soft:#eef4ff;
+  --green:#29b578;
+  --green-soft:#eafaf3;
+  --red:#ef5b78;
+  --orange:#f5a623;
+  --shadow:0 8px 28px rgba(34,51,84,.07);
+  --radius:16px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:
+    Inter,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.app{
+  display:grid;
+  grid-template-columns:205px minmax(0,1fr);
+  min-height:100vh;
+}
+
+
+/* SIDEBAR */
+
+.sidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  background:#fff;
+  border-right:1px solid var(--border);
+  padding:18px 12px;
+  display:flex;
+  flex-direction:column;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:4px 10px 22px;
+  font-size:18px;
+  font-weight:850;
+}
+
+.logo-mark{
+  width:18px;
+  height:18px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#1f65ff,#6c9cff);
+  transform:rotate(45deg);
+}
+
+.nav-group{
+  margin-bottom:18px;
+}
+
+.nav-btn{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#4d5666;
+  border-radius:9px;
+  padding:10px 11px;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  margin:2px 0;
+}
+
+.nav-btn:hover{
+  background:#f6f8fb;
+}
+
+.nav-btn.active{
+  background:var(--blue-soft);
+  color:var(--blue);
+  font-weight:750;
+  position:relative;
+}
+
+.nav-btn.active:before{
+  content:"";
+  position:absolute;
+  left:-12px;
+  top:7px;
+  bottom:7px;
+  width:3px;
+  border-radius:10px;
+  background:var(--blue);
+}
+
+.nav-icon{
+  width:18px;
+  text-align:center;
+  opacity:.9;
+}
+
+.sidebar-divider{
+  height:1px;
+  background:var(--border);
+  margin:12px 8px;
+}
+
+.sidebar-bottom{
+  margin-top:auto;
+}
+
+.promo{
+  background:
+    linear-gradient(145deg,#234da4,#0d2f77);
+  border-radius:14px;
+  padding:15px;
+  color:white;
+  box-shadow:0 8px 25px rgba(28,73,168,.25);
+}
+
+.promo-title{
+  font-size:11px;
+  font-weight:800;
+}
+
+.promo p{
+  font-size:9px;
+  line-height:1.5;
+  color:#cbd9ff;
+}
+
+.promo button{
+  width:100%;
+  border:0;
+  color:white;
+  background:#246bfd;
+  border-radius:999px;
+  padding:8px;
+  font-size:10px;
+}
+
+
+/* MAIN */
+
+.main{
+  min-width:0;
+}
+
+.topbar{
+  height:68px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:30;
+}
+
+.search-wrap{
+  width:min(420px,45vw);
+  position:relative;
+}
+
+.search{
+  width:100%;
+  border:1px solid #edf0f4;
+  background:#f8fafc;
+  padding:10px 14px;
+  border-radius:9px;
+  outline:none;
+  font-size:11px;
+}
+
+.search-results{
+  display:none;
+  position:absolute;
+  left:0;
+  right:0;
+  top:45px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  max-height:360px;
+  overflow-y:auto;
+  z-index:80;
+}
+
+.search-result{
+  padding:11px 13px;
+  border-bottom:1px solid var(--border);
+  font-size:11px;
+}
+
+.top-actions{
+  display:flex;
+  gap:9px;
+  align-items:center;
+}
+
+.circle-btn{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:#fff;
+  display:grid;
+  place-items:center;
+  color:#616979;
+}
+
+.avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#d9e4ff,#bcd0ff);
+  display:grid;
+  place-items:center;
+  font-size:11px;
+  font-weight:800;
+  color:#2454aa;
+}
+
+.content{
+  padding:22px 24px 40px;
+}
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+.page-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+
+.page-title h1{
+  margin:0;
+  font-size:23px;
+  letter-spacing:-.6px;
+}
+
+.page-title p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:10px;
+}
+
+.page-tools{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.tool{
+  border:1px solid var(--border);
+  background:#fff;
+  color:#596171;
+  padding:8px 11px;
+  border-radius:9px;
+  font-size:10px;
+}
+
+.primary{
+  background:var(--blue);
+  color:#fff;
+  border-color:var(--blue);
+}
+
+
+/* KPI */
+
+.kpi-row{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:13px;
+  margin-bottom:14px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+
+.kpi{
+  padding:15px 16px;
+}
+
+.kpi-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.kpi-name{
+  font-size:11px;
+  font-weight:700;
+}
+
+.kpi-icon{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#f6f8fb;
+  color:var(--blue);
+}
+
+.kpi-value{
+  margin-top:12px;
+  font-size:25px;
+  font-weight:850;
+  letter-spacing:-.8px;
+}
+
+.kpi-foot{
+  color:var(--muted);
+  font-size:9px;
+  margin-top:6px;
+}
+
+.up{
+  color:var(--green);
+  background:var(--green-soft);
+  border-radius:5px;
+  padding:2px 5px;
+}
+
+
+/* DASHBOARD GRID */
+
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.45fr) minmax(250px,.72fr);
+  gap:14px;
+}
+
+.left-stack,
+.right-stack{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.panel{
+  padding:16px;
+}
+
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
+
+.panel-title{
+  font-size:12px;
+  font-weight:800;
+}
+
+.more{
+  color:var(--muted);
+  letter-spacing:2px;
+}
+
+
+/* PROFIT CHART */
+
+.profit-layout{
+  display:grid;
+  grid-template-columns:150px 1fr;
+  gap:12px;
+  align-items:center;
+}
+
+.profit-value{
+  font-size:30px;
+  font-weight:850;
+  letter-spacing:-1px;
+}
+
+.svg-chart{
+  width:100%;
+  height:180px;
+}
+
+.customer-mini{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.customer-mini > div{
+  padding:12px;
+  border-right:1px solid var(--border);
+}
+
+.customer-mini > div:last-child{
+  border-right:0;
+}
+
+.mini-value{
+  font-size:15px;
+  font-weight:800;
+}
+
+.mini-label{
+  color:var(--muted);
+  font-size:9px;
+  margin-top:4px;
+}
+
+
+/* ACTIVITY */
+
+.activity-chart{
+  height:155px;
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  padding:12px 4px 0;
+}
+
+.day-bar{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.bar-shell{
+  height:110px;
+  width:28px;
+  display:flex;
+  align-items:flex-end;
+}
+
+.activity-bar{
+  width:100%;
+  border-radius:7px 7px 2px 2px;
+  background:#edf0f4;
+  transition:.3s ease;
+}
+
+.activity-bar.active{
+  background:var(--blue);
+}
+
+.day-name{
+  font-size:8px;
+  color:var(--muted);
+}
+
+
+/* REPEAT GAUGE */
+
+.gauge-wrap{
+  text-align:center;
+  padding-top:10px;
+}
+
+.gauge{
+  width:150px;
+  height:75px;
+  margin:0 auto;
+  overflow:hidden;
+  position:relative;
+}
+
+.gauge:before{
+  content:"";
+  position:absolute;
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  border:13px solid #edf0f4;
+  border-bottom-color:transparent;
+  border-left-color:var(--green);
+  border-top-color:var(--green);
+  transform:rotate(-45deg);
+}
+
+.gauge-value{
+  font-size:25px;
+  font-weight:850;
+  margin-top:-12px;
+}
+
+
+/* TABLE */
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th{
+  text-align:left;
+  padding:9px 8px;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+td{
+  padding:11px 8px;
+  border-top:1px solid var(--border);
+  font-size:10px;
+}
+
+.product-dot{
+  width:24px;
+  height:24px;
+  border-radius:7px;
+  background:#f4f6fa;
+  display:inline-grid;
+  place-items:center;
+  margin-right:7px;
+}
+
+
+/* AI CARD */
+
+.ai-card{
+  min-height:180px;
+}
+
+.ai-orb{
+  width:70px;
+  height:70px;
+  margin:12px auto 16px;
+  border-radius:50%;
+  background:
+    radial-gradient(
+      circle at 65% 35%,
+      #6ea5ff,
+      #1766ff 55%,
+      #0d47cb
+    );
+  box-shadow:
+    0 0 35px rgba(36,107,253,.35);
+  animation:pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+}
+
+.ai-input{
+  background:#f8fafc;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:8px 11px;
+  display:flex;
+  gap:8px;
+}
+
+.ai-input input{
+  flex:1;
+  border:0;
+  outline:0;
+  background:transparent;
+  font-size:9px;
+}
+
+.ai-send{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  border:0;
+  background:var(--blue);
+  color:white;
+}
+
+
+/* PIPELINE */
+
+.pipeline{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(230px,1fr));
+  gap:12px;
+  overflow-x:auto;
+}
+
+.pipeline-col{
+  background:#edf1f6;
+  border-radius:14px;
+  padding:10px;
+  min-height:440px;
+}
+
+.pipeline-head{
+  display:flex;
+  justify-content:space-between;
+  font-size:10px;
+  font-weight:800;
+  padding:3px 3px 10px;
+}
+
+.conv{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px;
+  margin-bottom:8px;
+  box-shadow:0 4px 12px rgba(30,50,80,.04);
+}
+
+.conv-name{
+  font-size:10px;
+  font-weight:800;
+}
+
+.conv-meta{
+  font-size:8px;
+  color:var(--muted);
+  margin-top:3px;
+}
+
+.badge{
+  display:inline-block;
+  background:#f4f6fa;
+  color:#788190;
+  padding:3px 6px;
+  border-radius:999px;
+  font-size:8px;
+  margin:5px 2px 0 0;
+}
+
+
+/* OTHER PAGES */
+
+.form-card{
+  padding:18px;
+}
+
+.split{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+label{
+  display:block;
+  margin-bottom:5px;
+  font-size:9px;
+  font-weight:700;
+}
+
+input,
+textarea,
+select{
+  width:100%;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:9px;
+  padding:9px 10px;
+  outline:none;
+  margin-bottom:10px;
+}
+
+textarea{
+  min-height:100px;
+}
+
+.btn{
+  border:0;
+  border-radius:9px;
+  padding:9px 12px;
+  font-size:10px;
+  font-weight:750;
+}
+
+.btn-blue{
+  background:var(--blue);
+  color:white;
+}
+
+.btn-green{
+  background:#eafaf3;
+  color:#087c52;
+}
+
+.btn-red{
+  background:#fff0f2;
+  color:#c93650;
+}
+
+
+/* MODAL */
+
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(17,25,39,.45);
+  backdrop-filter:blur(2px);
+  z-index:100;
+}
+
+.modal-overlay.open{
+  display:flex;
+}
+
+.modal{
+  width:min(660px,94vw);
+  max-height:84vh;
+  overflow:auto;
+  background:white;
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(20,30,50,.25);
+}
+
+.modal-head{
+  padding:17px 19px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--border);
+}
+
+.modal-body{
+  padding:15px;
+}
+
+.widget-option{
+  display:grid;
+  grid-template-columns:80px 1fr auto;
+  gap:14px;
+  align-items:center;
+  padding:13px;
+  border-bottom:1px dashed var(--border);
+}
+
+.widget-preview{
+  width:70px;
+  height:70px;
+  border-radius:12px;
+  background:#f7f9fc;
+  display:grid;
+  place-items:center;
+  font-size:24px;
+}
+
+.widget-option h4{
+  margin:0;
+  font-size:11px;
+}
+
+.widget-option p{
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.5;
+}
+
+.select-widget{
+  border:0;
+  border-radius:999px;
+  background:var(--blue);
+  color:white;
+  font-size:8px;
+  padding:7px 10px;
+}
+
+
+/* RESPONSIVE */
+
+.mobile-menu{
+  display:none;
+}
+
+@media(max-width:1100px){
+
+  .kpi-row{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .dashboard-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:760px){
+
+  .app{
+    display:block;
+  }
+
+  .sidebar{
+    position:fixed;
+    left:-220px;
+    width:205px;
+    z-index:70;
+    transition:.2s;
+  }
+
+  .sidebar.open{
+    left:0;
+  }
+
+  .mobile-menu{
+    display:grid;
+  }
+
+  .content{
+    padding:15px;
+  }
+
+  .kpi-row{
+    grid-template-columns:1fr;
+  }
+
+  .profit-layout,
+  .split{
+    grid-template-columns:1fr;
+  }
+
+  .search-wrap{
+    width:55vw;
+  }
+}
+
+</style>
+
+
+<style id="skinpara-v41-layout-fix">
+
+/* =========================================================
+   SKINPARA V4.1 — COMPACT PREMIUM LAYOUT
+========================================================= */
+
+body{
+  background:#f5f7fa;
+}
+
+.app{
+  grid-template-columns:190px minmax(0,1fr);
+}
+
+
+/* SIDEBAR */
+
+.sidebar{
+  padding:14px 10px;
+}
+
+.logo{
+  padding:4px 8px 18px;
+  font-size:17px;
+}
+
+.nav-btn{
+  padding:9px 10px;
+  font-size:11px;
+  border-radius:8px;
+}
+
+.sidebar-divider{
+  margin:10px 6px;
+}
+
+.promo{
+  padding:13px;
+  border-radius:12px;
+}
+
+.promo-title{
+  font-size:10px;
+}
+
+.promo p{
+  font-size:8px;
+}
+
+.promo button{
+  padding:7px;
+  font-size:9px;
+}
+
+
+/* TOPBAR */
+
+.topbar{
+  height:62px;
+  padding:0 20px;
+}
+
+.search-wrap{
+  width:min(390px,42vw);
+}
+
+.search{
+  padding:9px 12px;
+  font-size:10px;
+}
+
+.circle-btn{
+  width:32px;
+  height:32px;
+}
+
+.avatar{
+  width:32px;
+  height:32px;
+}
+
+
+/* CONTENT */
+
+.content{
+  padding:18px 20px 30px;
+  max-width:1500px;
+  margin:0 auto;
+}
+
+.page-head{
+  margin-bottom:15px;
+}
+
+.page-title h1{
+  font-size:21px;
+}
+
+.page-title p{
+  font-size:9px;
+}
+
+.tool{
+  padding:7px 10px;
+  font-size:9px;
+}
+
+
+/* KPI CARDS */
+
+.kpi-row{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:11px;
+  margin-bottom:11px;
+}
+
+.card{
+  border-radius:13px;
+  box-shadow:0 5px 18px rgba(32,51,84,.05);
+}
+
+.kpi{
+  padding:13px 14px;
+  min-height:105px;
+}
+
+.kpi-name{
+  font-size:10px;
+}
+
+.kpi-icon{
+  width:26px;
+  height:26px;
+}
+
+.kpi-value{
+  font-size:23px;
+  margin-top:9px;
+}
+
+.kpi-foot{
+  margin-top:5px;
+  font-size:8px;
+}
+
+
+/* MAIN DASHBOARD GRID */
+
+.dashboard-grid{
+  grid-template-columns:minmax(0,1.55fr) minmax(280px,.72fr);
+  gap:11px;
+  align-items:start;
+}
+
+.left-stack,
+.right-stack{
+  gap:11px;
+}
+
+.panel{
+  padding:14px;
+}
+
+.panel-head{
+  margin-bottom:9px;
+}
+
+.panel-title{
+  font-size:11px;
+}
+
+
+/* TOTAL SALES PANEL */
+
+.left-stack > .card:first-child{
+  min-height:285px;
+}
+
+.profit-layout{
+  grid-template-columns:135px 1fr;
+  gap:8px;
+}
+
+.profit-value{
+  font-size:27px;
+}
+
+.svg-chart{
+  height:145px;
+}
+
+.customer-mini{
+  margin-top:8px;
+}
+
+.customer-mini > div{
+  padding:9px 10px;
+}
+
+.mini-value{
+  font-size:13px;
+}
+
+.mini-label{
+  font-size:8px;
+}
+
+
+/* RIGHT COLUMN */
+
+.right-stack > .card:nth-child(1){
+  min-height:185px;
+}
+
+.right-stack > .card:nth-child(2){
+  min-height:190px;
+}
+
+.right-stack > .card:nth-child(3){
+  min-height:205px;
+}
+
+.activity-chart{
+  height:125px;
+  gap:7px;
+  padding-top:8px;
+}
+
+.bar-shell{
+  height:88px;
+  width:23px;
+}
+
+.day-name{
+  font-size:7px;
+}
+
+
+/* DELIVERY RATE */
+
+.gauge{
+  width:128px;
+  height:64px;
+}
+
+.gauge:before{
+  width:128px;
+  height:128px;
+  border-width:11px;
+}
+
+.gauge-value{
+  font-size:22px;
+  margin-top:-8px;
+}
+
+
+/* AI */
+
+.ai-card{
+  min-height:185px;
+}
+
+.ai-orb{
+  width:58px;
+  height:58px;
+  margin:9px auto 13px;
+}
+
+.ai-input{
+  padding:6px 9px;
+}
+
+.ai-send{
+  width:24px;
+  height:24px;
+}
+
+
+/* TABLE */
+
+th{
+  padding:8px 7px;
+  font-size:7.5px;
+}
+
+td{
+  padding:8px 7px;
+  font-size:9px;
+}
+
+.product-dot{
+  width:21px;
+  height:21px;
+  border-radius:6px;
+  margin-right:5px;
+}
+
+.badge{
+  padding:2px 5px;
+  font-size:7px;
+}
+
+
+/* RECENT CUSTOMERS */
+
+.left-stack > .card:nth-child(2){
+  min-height:330px;
+}
+
+.left-stack > .card:nth-child(2) .table-wrap{
+  max-height:270px;
+  overflow:auto;
+}
+
+
+/* PIPELINE */
+
+.pipeline{
+  grid-template-columns:repeat(7,minmax(205px,1fr));
+  gap:9px;
+}
+
+.pipeline-col{
+  min-height:390px;
+  padding:8px;
+}
+
+.pipeline-head{
+  font-size:9px;
+  padding:3px 2px 8px;
+}
+
+.conv{
+  padding:9px;
+  margin-bottom:6px;
+}
+
+.conv-name{
+  font-size:9px;
+}
+
+.conv-meta{
+  font-size:7px;
+}
+
+
+/* FORMS */
+
+.form-card{
+  padding:15px;
+}
+
+label{
+  font-size:8px;
+}
+
+input,
+textarea,
+select{
+  padding:8px 9px;
+  font-size:9px;
+}
+
+textarea{
+  min-height:85px;
+}
+
+.btn{
+  padding:8px 10px;
+  font-size:9px;
+}
+
+
+/* ADD WIDGET MODAL */
+
+.modal{
+  width:min(600px,92vw);
+}
+
+.modal-head{
+  padding:14px 16px;
+}
+
+.modal-body{
+  padding:12px;
+}
+
+.widget-option{
+  grid-template-columns:65px 1fr auto;
+  gap:11px;
+  padding:10px;
+}
+
+.widget-preview{
+  width:58px;
+  height:58px;
+  font-size:21px;
+}
+
+.widget-option h4{
+  font-size:10px;
+}
+
+.widget-option p{
+  font-size:8px;
+}
+
+
+/* DESKTOP WIDE */
+
+@media(min-width:1500px){
+
+  .content{
+    max-width:1420px;
+  }
+
+  .dashboard-grid{
+    grid-template-columns:minmax(0,1.6fr) 365px;
+  }
+}
+
+
+/* TABLET */
+
+@media(max-width:1100px){
+
+  .app{
+    grid-template-columns:175px minmax(0,1fr);
+  }
+
+  .dashboard-grid{
+    grid-template-columns:1fr;
+  }
+
+  .kpi-row{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+
+/* MOBILE */
+
+@media(max-width:760px){
+
+  .app{
+    display:block;
+  }
+
+  .sidebar{
+    width:190px;
+    left:-205px;
+  }
+
+  .content{
+    padding:13px;
+  }
+
+  .kpi-row{
+    grid-template-columns:1fr;
+  }
+
+  .dashboard-grid{
+    display:block;
+  }
+
+  .right-stack{
+    margin-top:10px;
+  }
+
+  .profit-layout{
+    grid-template-columns:1fr;
+  }
+
+  .svg-chart{
+    height:125px;
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="sidebar" id="sidebar">
+
+  <div class="logo">
+    <span class="logo-mark"></span>
+    SkinPara
+  </div>
+
+  <div class="nav-group">
+
+    <button class="nav-btn active" data-page="dashboard">
+      <span class="nav-icon">◉</span>
+      Dashboard
+    </button>
+
+    <button class="nav-btn" data-page="pipeline">
+      <span class="nav-icon">▣</span>
+      Orders & Pipeline
+    </button>
+
+    <button class="nav-btn" data-page="supplier">
+      <span class="nav-icon">◇</span>
+      Supplier
+    </button>
+
+    <button class="nav-btn" data-page="delivery">
+      <span class="nav-icon">▤</span>
+      Delivery
+    </button>
+
+    <button class="nav-btn" data-page="customer">
+      <span class="nav-icon">♙</span>
+      Customers
+    </button>
+
+    <button class="nav-btn" data-page="campaigns">
+      <span class="nav-icon">✦</span>
+      Campaigns
+    </button>
+
+    <button class="nav-btn" data-page="automations">
+      <span class="nav-icon">⚡</span>
+      Automations
+    </button>
+
+    <button class="nav-btn" data-page="wallet">
+      <span class="nav-icon">◎</span>
+      Wallet & Referral
+    </button>
+
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="nav-group">
+
+    <button class="nav-btn" data-page="analytics">
+      <span class="nav-icon">▥</span>
+      Analytics
+    </button>
+
+    <button class="nav-btn">
+      <span class="nav-icon">⚙</span>
+      Settings
+    </button>
+
+  </div>
+
+  <div class="sidebar-bottom">
+
+    <div class="promo">
+      <div class="promo-title">
+        SkinPara AI
+      </div>
+
+      <p>
+        AI sales assistant, product intelligence and automation.
+      </p>
+
+      <button>
+        AI Online
+      </button>
+    </div>
+
+  </div>
+
+</aside>
+
+
+<div class="main">
+
+<header class="topbar">
+
+  <button
+    class="circle-btn mobile-menu"
+    onclick="toggleSidebar()"
+  >
+    ☰
+  </button>
+
+  <div class="search-wrap">
+
+    <input
+      id="globalSearch"
+      class="search"
+      placeholder="Search anything..."
+    >
+
+    <div
+      id="searchResults"
+      class="search-results"
+    ></div>
+
+  </div>
+
+  <div class="top-actions">
+
+    <button
+      class="circle-btn"
+      onclick="openWidgetModal()"
+      title="Add widget"
+    >
+      ＋
+    </button>
+
+    <button
+      class="circle-btn"
+      title="Notifications"
+    >
+      ♢
+    </button>
+
+    <div class="avatar">
+      SP
+    </div>
+
+  </div>
+
+</header>
+
+
+<main class="content">
+
+
+<!-- DASHBOARD -->
+
+<section id="dashboard" class="page active">
+
+  <div class="page-head">
+
+    <div class="page-title">
+
+      <h1>
+        Dashboard
+      </h1>
+
+      <p>
+        SkinPara commerce and sales overview
+      </p>
+
+    </div>
+
+    <div class="page-tools">
+
+      <button class="tool">
+        Last 30 days
+      </button>
+
+      <button
+        class="tool"
+        onclick="openWidgetModal()"
+      >
+        ＋ Add widget
+      </button>
+
+      <button class="tool primary">
+        ↓ Export
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div
+    id="kpiRow"
+    class="kpi-row"
+  ></div>
+
+
+  <div class="dashboard-grid">
+
+
+    <div class="left-stack">
+
+
+      <div class="card panel">
+
+        <div class="panel-head">
+
+          <div class="panel-title">
+            Total Sales
+          </div>
+
+          <div class="more">
+            ···
+          </div>
+
+        </div>
+
+
+        <div class="profit-layout">
+
+          <div>
+
+            <div
+              id="profitValue"
+              class="profit-value"
+            >
+              0 MAD
+            </div>
+
+            <div
+              style="
+                color:var(--green);
+                font-size:9px;
+                margin-top:8px
+              "
+            >
+              ↑ Live order value
+            </div>
+
+          </div>
+
+
+          <svg
+            class="svg-chart"
+            viewBox="0 0 520 180"
+          >
+
+            <defs>
+
+              <linearGradient
+                id="fill"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+
+                <stop
+                  offset="0%"
+                  stop-color="#246bfd"
+                  stop-opacity=".20"
+                />
+
+                <stop
+                  offset="100%"
+                  stop-color="#246bfd"
+                  stop-opacity="0"
+                />
+
+              </linearGradient>
+
+            </defs>
+
+
+            <path
+              d="
+                M10 135
+                L60 128
+                L105 135
+                L150 95
+                L190 112
+                L235 88
+                L280 88
+                L320 64
+                L360 68
+                L400 38
+                L440 60
+                L510 48
+                L510 170
+                L10 170 Z
+              "
+              fill="url(#fill)"
+            />
+
+
+            <path
+              d="
+                M10 135
+                L60 128
+                L105 135
+                L150 95
+                L190 112
+                L235 88
+                L280 88
+                L320 64
+                L360 68
+                L400 38
+                L440 60
+                L510 48
+              "
+              fill="none"
+              stroke="#246bfd"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+
+          </svg>
+
+        </div>
+
+
+        <div class="customer-mini">
+
+          <div>
+            <div
+              id="miniCustomers"
+              class="mini-value"
+            >
+              0
+            </div>
+
+            <div class="mini-label">
+              Customers
+            </div>
+          </div>
+
+
+          <div>
+            <div
+              id="miniOrders"
+              class="mini-value"
+            >
+              0
+            </div>
+
+            <div class="mini-label">
+              Orders
+            </div>
+          </div>
+
+
+          <div>
+            <div
+              id="miniDelivered"
+              class="mini-value"
+            >
+              0
+            </div>
+
+            <div class="mini-label">
+              Delivered
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="card panel">
+
+        <div class="panel-head">
+
+          <div class="panel-title">
+            Recent Customers
+          </div>
+
+          <div class="more">
+            ···
+          </div>
+
+        </div>
+
+        <div
+          id="recentCustomers"
+          class="table-wrap"
+        ></div>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="right-stack">
+
+
+      <div class="card panel">
+
+        <div class="panel-head">
+
+          <div class="panel-title">
+            Customer Activity
+          </div>
+
+          <div class="more">
+            ···
+          </div>
+
+        </div>
+
+
+        <div class="activity-chart">
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:48%"></div>
+            </div>
+            <span class="day-name">Sun</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:62%"></div>
+            </div>
+            <span class="day-name">Mon</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar active" style="height:88%"></div>
+            </div>
+            <span class="day-name">Tue</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:55%"></div>
+            </div>
+            <span class="day-name">Wed</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:42%"></div>
+            </div>
+            <span class="day-name">Thu</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:65%"></div>
+            </div>
+            <span class="day-name">Fri</span>
+          </div>
+
+          <div class="day-bar">
+            <div class="bar-shell">
+              <div class="activity-bar" style="height:72%"></div>
+            </div>
+            <span class="day-name">Sat</span>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="card panel">
+
+        <div class="panel-head">
+
+          <div class="panel-title">
+            Delivery Rate
+          </div>
+
+          <div class="more">
+            ···
+          </div>
+
+        </div>
+
+
+        <div class="gauge-wrap">
+
+          <div class="gauge"></div>
+
+          <div
+            id="deliveryRate"
+            class="gauge-value"
+          >
+            0%
+          </div>
+
+          <div
+            style="
+              color:var(--muted);
+              font-size:9px
+            "
+          >
+            Orders successfully delivered
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="card panel ai-card">
+
+        <div class="panel-head">
+
+          <div class="panel-title">
+            AI Assistant
+          </div>
+
+          <div class="more">
+            ↗
+          </div>
+
+        </div>
+
+        <div class="ai-orb"></div>
+
+        <div class="ai-input">
+
+          <input
+            placeholder="Ask SkinPara AI..."
+          >
+
+          <button class="ai-send">
+            ↑
+          </button>
+
+        </div>
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+</section>
+
+
+
+<!-- PIPELINE -->
+
+<section id="pipeline" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Orders & Pipeline</h1>
+      <p>Track customers through the sales funnel</p>
+    </div>
+
+    <button
+      class="tool primary"
+      onclick="loadPipeline()"
+    >
+      Refresh
+    </button>
+
+  </div>
+
+  <div
+    id="pipelineBoard"
+    class="pipeline"
+  ></div>
+
+</section>
+
+
+
+<!-- SUPPLIER -->
+
+<section id="supplier" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Supplier</h1>
+      <p>Pending stock confirmation</p>
+    </div>
+
+    <button
+      class="tool primary"
+      onclick="loadSupplier()"
+    >
+      Refresh
+    </button>
+
+  </div>
+
+  <div
+    id="supplierOrders"
+  ></div>
+
+</section>
+
+
+
+<!-- CUSTOMER -->
+
+<section id="customer" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Customer 360</h1>
+      <p>Complete customer profile</p>
+    </div>
+
+  </div>
+
+  <div
+    class="card form-card"
+    style="max-width:520px"
+  >
+
+    <label>
+      Contact ID
+    </label>
+
+    <input
+      id="customerId"
+      type="number"
+      placeholder="Example: 39"
+    >
+
+    <button
+      class="btn btn-blue"
+      onclick="loadCustomer()"
+    >
+      Open Customer
+    </button>
+
+  </div>
+
+  <br>
+
+  <div id="customerResult"></div>
+
+</section>
+
+
+
+<!-- DELIVERY -->
+
+<section id="delivery" class="page">
+  <div class="page-head">
+    <div class="page-title">
+      <h1>Delivery</h1>
+      <p>Durable mock/manual shipment readiness</p>
+    </div>
+  </div>
+  <div id="deliveryStatus"></div>
+</section>
+
+
+<!-- CAMPAIGNS -->
+
+<section id="campaigns" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Campaigns</h1>
+      <p>Segment and communicate with customers</p>
+    </div>
+
+  </div>
+
+
+  <div class="split">
+
+    <div class="card form-card">
+
+      <label>Campaign Name</label>
+      <input id="campaignName" value="SkinPara Campaign">
+
+      <label>Durable Segment ID</label>
+      <input id="campaignLabel" placeholder="repeat_customers">
+
+      <label>Template ID</label>
+      <input id="campaignMessage" value="test_marketing_wallet">
+
+      <button
+        class="btn btn-blue"
+        onclick="createCampaign()"
+      >
+        Save Draft
+      </button>
+
+    </div>
+
+    <div class="card form-card">
+
+      <strong>Campaign Safety</strong>
+
+      <p
+        style="
+          font-size:10px;
+          color:var(--muted);
+          line-height:1.6
+        "
+      >
+        Campaigns remain dry-run/test only. Live mode is hard-blocked.
+        Audience, consent decisions and simulations are durable.
+      </p>
+
+    </div>
+
+  </div>
+
+  <br>
+
+  <div id="campaignList"></div>
+
+</section>
+
+
+
+<!-- AUTOMATIONS -->
+
+<section id="automations" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Automations</h1>
+      <p>Build follow-up workflows</p>
+    </div>
+
+  </div>
+
+
+  <div class="split">
+
+    <div class="card form-card">
+
+      <label>Name</label>
+      <input id="autoName" value="New Automation">
+
+      <label>Trigger Label</label>
+      <input id="autoLabel" placeholder="interested">
+
+      <label>After Minutes</label>
+      <input id="autoMinutes" type="number" value="60">
+
+      <label>Action</label>
+
+      <select id="autoAction">
+        <option value="add_label">Add Label</option>
+        <option value="send_message">Send Message</option>
+      </select>
+
+      <label>Action Value</label>
+
+      <textarea id="autoValue"></textarea>
+
+      <button
+        class="btn btn-blue"
+        onclick="createAutomation()"
+      >
+        Save Automation
+      </button>
+
+    </div>
+
+
+    <div class="card form-card">
+
+      <strong>Automation Runner</strong>
+
+      <p
+        style="
+          font-size:10px;
+          color:var(--muted)
+        "
+      >
+        Only enabled automations execute.
+      </p>
+
+      <button
+        class="btn btn-blue"
+        onclick="runAutomations()"
+      >
+        Run Enabled
+      </button>
+
+      <pre id="autoRunResult">Ready.</pre>
+
+    </div>
+
+  </div>
+
+  <br>
+
+  <div id="automationList"></div>
+
+</section>
+
+
+
+<!-- WALLET -->
+
+<section id="wallet" class="page">
+
+  <div class="page-head">
+
+    <div class="page-title">
+      <h1>Wallet & Referral</h1>
+      <p>Durable ledger and referral rewards — TEST mode only</p>
+    </div>
+
+  </div>
+
+
+  <div class="split">
+
+    <div class="card form-card">
+
+      <label>Contact ID</label>
+      <input id="walletContact" type="number">
+
+      <label>Amount MAD</label>
+      <input id="walletAmount" type="number" value="5">
+
+      <label>Reason</label>
+      <input id="walletReason" value="Referral reward">
+
+      <button
+        class="btn btn-blue"
+        onclick="creditWallet()"
+      >
+        Test Credit Wallet
+      </button>
+
+      <button class="btn btn-green" onclick="loadLoyalty()">
+        Load Wallet & Ledger
+      </button>
+
+      <pre id="walletResult">Ready.</pre>
+
+    </div>
+
+
+    <div class="card form-card">
+
+      <label>Referrer Contact</label>
+      <input id="referrerId" type="number">
+
+      <label>Referred Contact</label>
+      <input id="referredId" type="number">
+
+      <button
+        class="btn btn-blue"
+        onclick="registerReferral()"
+      >
+        Register Referral
+      </button>
+
+      <pre id="referralResult">Ready.</pre>
+
+    </div>
+
+  </div>
+
+  <br>
+  <div id="loyaltyOverview"></div>
+
+</section>
+
+<section id="analytics" class="page">
+  <div class="page-head">
+    <div class="page-title"><h1>Advanced Analytics</h1><p>Durable business metrics and separate live operations</p></div>
+    <div class="page-tools">
+      <select id="analyticsRange" class="tool" onchange="loadAdvancedAnalytics()">
+        <option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last_7_days">Last 7 days</option><option value="last_30_days" selected>Last 30 days</option><option value="this_month">This month</option><option value="previous_month">Previous month</option>
+      </select>
+    </div>
+  </div>
+  <div id="analyticsAdvanced">Loading…</div>
+</section>
+
+</main>
+
+</div>
+
+</div>
+
+
+
+<!-- ADD WIDGET MODAL -->
+
+<div
+  id="widgetModal"
+  class="modal-overlay"
+>
+
+  <div class="modal">
+
+    <div class="modal-head">
+
+      <strong>
+        Add Widget
+      </strong>
+
+      <button
+        class="circle-btn"
+        onclick="closeWidgetModal()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="modal-body">
+
+
+      <div class="widget-option">
+
+        <div class="widget-preview">
+          ◔
+        </div>
+
+        <div>
+          <h4>Customer Segmentation</h4>
+          <p>
+            Segment customers by behaviour, lifecycle and labels.
+          </p>
+        </div>
+
+        <button class="select-widget">
+          Select
+        </button>
+
+      </div>
+
+
+      <div class="widget-option">
+
+        <div class="widget-preview">
+          ▥
+        </div>
+
+        <div>
+          <h4>Orders Performance</h4>
+          <p>
+            Monitor pending, shipped and delivered orders.
+          </p>
+        </div>
+
+        <button class="select-widget">
+          Select
+        </button>
+
+      </div>
+
+
+      <div class="widget-option">
+
+        <div class="widget-preview">
+          ⌁
+        </div>
+
+        <div>
+          <h4>Trend Analysis</h4>
+          <p>
+            Understand sales and conversation trends.
+          </p>
+        </div>
+
+        <button class="select-widget">
+          Select
+        </button>
+
+      </div>
+
+
+      <div class="widget-option">
+
+        <div class="widget-preview">
+          ◎
+        </div>
+
+        <div>
+          <h4>AI Performance</h4>
+          <p>
+            AI handled conversations, failures and handoffs.
+          </p>
+        </div>
+
+        <button class="select-widget">
+          Select
+        </button>
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+
+async function api(url,options={}){
+
+  const r=
+    await fetch(
+      url,
+      {
+        headers:{
+          "Content-Type":"application/json"
+        },
+        ...options
+      }
+    );
+
+  const data=
+    await r.json();
+
+  if(!r.ok){
+    throw new Error(
+      data.error||
+      "Request failed"
+    );
+  }
+
+  return data;
+}
+
+
+/* NAV */
+
+document
+.querySelectorAll(
+  ".nav-btn[data-page]"
+)
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    document
+    .querySelectorAll(
+      ".nav-btn"
+    )
+    .forEach(
+      b=>b.classList.remove(
+        "active"
+      )
+    );
+
+    btn.classList.add(
+      "active"
+    );
+
+    document
+    .querySelectorAll(
+      ".page"
+    )
+    .forEach(
+      p=>p.classList.remove(
+        "active"
+      )
+    );
+
+    const page=
+      btn.dataset.page;
+
+    document
+    .getElementById(page)
+    .classList.add(
+      "active"
+    );
+
+    document
+    .getElementById(
+      "sidebar"
+    )
+    .classList.remove(
+      "open"
+    );
+
+    if(page==="dashboard") loadDashboard();
+    if(page==="pipeline") loadPipeline();
+    if(page==="supplier") loadSupplier();
+    if(page==="delivery") loadDelivery();
+    if(page==="campaigns") loadCampaigns();
+    if(page==="automations") loadAutomations();
+    if(page==="analytics") loadAdvancedAnalytics();
+  };
+});
+
+
+function toggleSidebar(){
+  document
+  .getElementById(
+    "sidebar"
+  )
+  .classList.toggle(
+    "open"
+  );
+}
+
+
+/* DASHBOARD */
+
+async function loadDashboard(){
+
+  const d=
+    await api(
+      "/api/analytics"
+    );
+
+
+  const items=[
+
+    [
+      "Customers",
+      d.conversations,
+      "Total conversations",
+      "♙"
+    ],
+
+    [
+      "Interested",
+      d.interested,
+      "Potential buyers",
+      "◎"
+    ],
+
+    [
+      "Orders",
+      d.orders_created,
+      "Created orders",
+      "▣"
+    ],
+
+    [
+      "Delivered",
+      d.delivered,
+      "Successful deliveries",
+      "✓"
+    ]
+
+  ];
+
+
+  document
+  .getElementById(
+    "kpiRow"
+  )
+  .innerHTML=
+    items.map(
+      item=>`
+        <div class="card kpi">
+
+          <div class="kpi-top">
+
+            <div class="kpi-name">
+              ${item[0]}
+            </div>
+
+            <div class="kpi-icon">
+              ${item[3]}
+            </div>
+
+          </div>
+
+          <div class="kpi-value">
+            ${item[1]}
+          </div>
+
+          <div class="kpi-foot">
+            <span class="up">
+              Live
+            </span>
+            ${item[2]}
+          </div>
+
+        </div>
+      `
+    ).join("");
+
+
+  document
+  .getElementById(
+    "profitValue"
+  )
+  .textContent=
+    d.order_value_total+
+    " MAD";
+
+
+  document
+  .getElementById(
+    "miniCustomers"
+  )
+  .textContent=
+    d.conversations;
+
+
+  document
+  .getElementById(
+    "miniOrders"
+  )
+  .textContent=
+    d.orders_created;
+
+
+  document
+  .getElementById(
+    "miniDelivered"
+  )
+  .textContent=
+    d.delivered;
+
+
+  document
+  .getElementById(
+    "deliveryRate"
+  )
+  .textContent=
+    d.order_to_delivered_percent+
+    "%";
+
+
+  const pipeline=
+    await api(
+      "/api/pipeline"
+    );
+
+
+  const customers=
+    [];
+
+  pipeline.stages
+  .forEach(stage=>{
+
+    stage.conversations
+    .forEach(c=>{
+
+      if(
+        customers.length<
+        6
+      ){
+        customers.push({
+          ...c,
+          stage:
+            stage.title
+        });
+      }
+
+    });
+
+  });
+
+
+  document
+  .getElementById(
+    "recentCustomers"
+  )
+  .innerHTML=`
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Customer</th>
+          <th>Stage</th>
+          <th>Order Value</th>
+          <th>Status</th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        ${
+          customers.map(
+            c=>`
+
+              <tr>
+
+                <td>
+                  <span class="product-dot">
+                    ♙
+                  </span>
+                  ${escapeHtml(c.name)}
+                </td>
+
+                <td>
+                  ${escapeHtml(c.stage)}
+                </td>
+
+                <td>
+                  ${
+                    c.custom_attributes
+                    ?.order_total
+                    ||0
+                  } MAD
+                </td>
+
+                <td>
+                  <span class="badge">
+                    ${
+                      c.labels[
+                        c.labels.length-1
+                      ]||"lead"
+                    }
+                  </span>
+                </td>
+
+              </tr>
+            `
+          ).join("")
+        }
+
+      </tbody>
+
+    </table>
+  `;
+
+}
+
+
+/* PIPELINE */
+
+async function loadPipeline(){
+
+  const d=
+    await api(
+      "/api/pipeline"
+    );
+
+  document
+  .getElementById(
+    "pipelineBoard"
+  )
+  .innerHTML=
+    d.stages.map(
+      stage=>`
+
+        <div class="pipeline-col">
+
+          <div class="pipeline-head">
+
+            <span>
+              ${stage.title}
+            </span>
+
+            <span>
+              ${stage.conversations.length}
+            </span>
+
+          </div>
+
+          ${
+            stage.conversations.length
+            ?
+            stage.conversations.map(
+              c=>`
+
+                <div class="conv">
+
+                  <div class="conv-name">
+                    ${escapeHtml(c.name)}
+                  </div>
+
+                  <div class="conv-meta">
+                    Conversation #${c.id}
+                  </div>
+
+                  ${
+                    c.labels.map(
+                      label=>`
+                        <span class="badge">
+                          ${escapeHtml(label)}
+                        </span>
+                      `
+                    ).join("")
+                  }
+
+                </div>
+              `
+            ).join("")
+            :
+            `
+              <div
+                style="
+                  text-align:center;
+                  padding:30px;
+                  color:var(--muted);
+                  font-size:9px
+                "
+              >
+                No customers
+              </div>
+            `
+          }
+
+        </div>
+      `
+    ).join("");
+
+}
+
+
+/* SUPPLIER */
+
+async function loadSupplier(){
+
+  const d=
+    await api(
+      "/api/supplier/pending"
+    );
+
+  if(!d.orders.length){
+
+    document
+    .getElementById(
+      "supplierOrders"
+    )
+    .innerHTML=`
+      <div class="card panel">
+        No pending stock orders.
+      </div>
+    `;
+
+    return;
+  }
+
+
+  document
+  .getElementById(
+    "supplierOrders"
+  )
+  .innerHTML=`
+
+    <div class="card panel table-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Conversation</th>
+            <th>Customer</th>
+            <th>Product</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${
+            d.orders.map(
+              o=>`
+
+                <tr>
+
+                  <td>
+                    #${o.conversation_id}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(o.customer)}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(o.product)}
+                  </td>
+
+                  <td>
+                    ${o.total||0} MAD
+                  </td>
+
+                  <td>
+
+                    <button
+                      class="btn btn-green"
+                      onclick="
+                        supplierConfirm(
+                          ${o.conversation_id}
+                        )
+                      "
+                    >
+                      Confirm
+                    </button>
+
+                    <button
+                      class="btn btn-red"
+                      onclick="
+                        supplierReject(
+                          ${o.conversation_id}
+                        )
+                      "
+                    >
+                      Reject
+                    </button>
+
+                  </td>
+
+                </tr>
+              `
+            ).join("")
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+
+}
+
+
+async function supplierConfirm(id){
+
+  if(
+    !confirm(
+      "Confirm stock?"
+    )
+  ) return;
+
+  await api(
+    "/api/supplier/confirm",
+    {
+      method:"POST",
+      body:JSON.stringify({
+        conversation_id:id
+      })
+    }
+  );
+
+  loadSupplier();
+
+}
+
+
+async function supplierReject(id){
+
+  const reason=
+    prompt(
+      "Reason?",
+      "Supplier: unavailable"
+    );
+
+  if(reason===null) return;
+
+  await api(
+    "/api/supplier/reject",
+    {
+      method:"POST",
+      body:JSON.stringify({
+        conversation_id:id,
+        reason
+      })
+    }
+  );
+
+  loadSupplier();
+
+}
+
+
+/* CUSTOMER */
+
+async function loadCustomer(){
+
+  const id=
+    document
+    .getElementById(
+      "customerId"
+    ).value;
+
+  if(!id) return;
+
+  const d=
+    await api(
+      "/api/customer/"+id
+    );
+
+  document
+  .getElementById(
+    "customerResult"
+  )
+  .innerHTML=`
+
+    <div class="split">
+
+      <div class="card panel">
+
+        <div class="panel-title">
+          ${escapeHtml(
+            d.contact.name||
+            "Customer"
+          )}
+        </div>
+
+        <p
+          style="
+            color:var(--muted);
+            font-size:10px
+          "
+        >
+          ${
+            escapeHtml(
+              d.contact.phone_number||
+              d.contact.email||
+              ""
+            )
+          }
+        </p>
+
+        <pre>${
+          escapeHtml(
+            JSON.stringify(
+              d.contact.custom_attributes||{},
+              null,
+              2
+            )
+          )
+        }</pre>
+
+      </div>
+
+
+      <div>
+
+        <div class="card panel">
+
+          <div class="kpi-name">
+            Wallet
+          </div>
+
+          <div class="kpi-value">
+            ${d.wallet_balance}
+            MAD
+          </div>
+
+        </div>
+
+        <br>
+
+        <div class="card panel">
+
+          <div class="kpi-name">
+            Delivered Orders
+          </div>
+
+          <div class="kpi-value">
+            ${d.delivered_orders}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* DELIVERY */
+
+async function loadDelivery(){
+  const d=await api("/api/delivery/readiness");
+  document.getElementById("deliveryStatus").innerHTML=`
+    <div class="card panel">
+      <div class="panel-title">Delivery live: ${d.live_enabled?"true":"false"} · Provider: ${escapeHtml(d.provider)}</div>
+      <p style="color:var(--muted);font-size:9px">External calls: ${d.external_calls?"enabled":"disabled"} · Mode: ${escapeHtml(d.mode)}</p>
+    </div><br>
+    <div class="card panel table-wrap"><table>
+      <thead><tr><th>Order</th><th>Contact</th><th>Provider</th><th>Tracking</th><th>Status</th><th>Last update</th><th>Mode</th><th>Failure</th></tr></thead>
+      <tbody>${d.recent_shipments.map(s=>`<tr><td>${escapeHtml(s.order_id)}</td><td>${escapeHtml(s.contact_id)}</td><td>${escapeHtml(s.provider)}</td><td>${escapeHtml(s.tracking_number||"—")}</td><td>${escapeHtml(s.status)}</td><td>${escapeHtml(s.updated_at)}</td><td>${escapeHtml(s.mode)}</td><td>${escapeHtml(s.last_error_message||"—")}</td></tr>`).join("")||"<tr><td colspan='8'>No shipments</td></tr>"}</tbody>
+    </table></div>`;
+}
+
+
+/* CAMPAIGNS */
+
+async function loadCampaigns(){
+
+  const d=
+    await api(
+      "/api/campaign-center"
+    );
+
+  document
+  .getElementById(
+    "campaignList"
+  )
+  .innerHTML=`
+
+    <div class="card panel table-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Segment</th>
+            <th>Mode</th>
+            <th>Status</th>
+            <th>Audience</th>
+            <th>Simulated</th>
+            <th>Skipped</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+        ${
+          d.campaigns.map(
+            c=>`
+              <tr>
+                <td>${escapeHtml(c.name)}</td>
+                <td>${escapeHtml(c.segment_id||"—")}</td>
+                <td>${escapeHtml(c.mode)}</td>
+                <td>${escapeHtml(c.status)}</td>
+                <td>${c.audience_count||0}</td>
+                <td>${c.simulated_sent||0}</td>
+                <td>${c.skipped_count||0}</td>
+              </tr>
+            `
+          ).join("")
+        }
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+
+}
+
+
+async function createCampaign(){
+
+  await api(
+    "/api/campaigns",
+    {
+      method:"POST",
+      body:JSON.stringify({
+        name:
+          document
+          .getElementById(
+            "campaignName"
+          ).value,
+
+        segment_id:
+          document
+          .getElementById(
+            "campaignLabel"
+          ).value,
+
+        template_id:
+          document
+          .getElementById(
+            "campaignMessage"
+          ).value,
+
+        status:"draft",
+        mode:"dry-run",
+        campaign_type:"marketing"
+      })
+    }
+  );
+
+  loadCampaigns();
+
+}
+
+
+/* AUTOMATIONS */
+
+async function loadAutomations(){
+
+  const d=
+    await api(
+      "/api/automations"
+    );
+
+  document
+  .getElementById(
+    "automationList"
+  )
+  .innerHTML=`
+
+    <div class="card panel table-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Trigger</th>
+            <th>Delay</th>
+            <th>Action</th>
+            <th>Mode</th>
+            <th>Cooldown</th>
+            <th>Status</th>
+            <th>Last Run</th>
+            <th>Next Run</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${
+            d.automations.map(
+              a=>`
+                <tr>
+                  <td>${escapeHtml(a.name)}</td>
+                  <td>${escapeHtml(a.event_type||a.if_label||"")}</td>
+                  <td>${Math.round(Number(a.action_config?.delay_seconds||0)/60)} min</td>
+                  <td>${escapeHtml(a.action_type)}</td>
+                  <td>${escapeHtml(a.mode||"dry-run")}</td>
+                  <td>${Number(a.cooldown_seconds||0)} sec</td>
+                  <td>${a.enabled?"Enabled":"Disabled"}</td>
+                  <td>${escapeHtml(a.last_run?.status||"—")}</td>
+                  <td>${escapeHtml(a.next_scheduled_run||"—")}</td>
+                </tr>
+              `
+            ).join("")
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+
+}
+
+
+async function createAutomation(){
+
+  await api(
+    "/api/automations",
+    {
+      method:"POST",
+      body:JSON.stringify({
+
+        name:
+          document
+          .getElementById(
+            "autoName"
+          ).value,
+
+        if_label:
+          document
+          .getElementById(
+            "autoLabel"
+          ).value,
+
+        after_minutes:
+          Number(
+            document
+            .getElementById(
+              "autoMinutes"
+            ).value
+          ),
+
+        action_type:
+          document
+          .getElementById(
+            "autoAction"
+          ).value,
+
+        event_type:
+          document
+          .getElementById(
+            "autoLabel"
+          ).value,
+
+        action_value:
+          document
+          .getElementById(
+            "autoValue"
+          ).value,
+
+        enabled:false,
+        mode:"dry-run",
+        cooldown_seconds:0
+      })
+    }
+  );
+
+  loadAutomations();
+
+}
+
+
+async function runAutomations(){
+
+  const d=
+    await api(
+      "/api/automations/run",
+      {
+        method:"POST",
+        body:"{}"
+      }
+    );
+
+  document
+  .getElementById(
+    "autoRunResult"
+  )
+  .textContent=
+    JSON.stringify(
+      d,
+      null,
+      2
+    );
+
+}
+
+
+/* WALLET */
+
+async function creditWallet(){
+
+  const d=
+    await api(
+      "/api/wallet/credit",
+      {
+        method:"POST",
+        body:JSON.stringify({
+
+          contact_id:
+            Number(
+              document
+              .getElementById(
+                "walletContact"
+              ).value
+            ),
+
+          amount:
+            Number(
+              document
+              .getElementById(
+                "walletAmount"
+              ).value
+            ),
+
+          reason:
+            document
+            .getElementById(
+              "walletReason"
+            ).value
+        })
+      }
+    );
+
+  document
+  .getElementById(
+    "walletResult"
+  )
+  .textContent=
+    JSON.stringify(
+      d,
+      null,
+      2
+    );
+
+}
+
+
+async function registerReferral(){
+
+  const d=
+    await api(
+      "/api/referrals",
+      {
+        method:"POST",
+        body:JSON.stringify({
+
+          referrer_contact_id:
+            Number(
+              document
+              .getElementById(
+                "referrerId"
+              ).value
+            ),
+
+          referred_contact_id:
+            Number(
+              document
+              .getElementById(
+                "referredId"
+              ).value
+            )
+        })
+      }
+    );
+
+  document
+  .getElementById(
+    "referralResult"
+  )
+  .textContent=
+    JSON.stringify(
+      d,
+      null,
+      2
+    );
+
+}
+
+async function loadLoyalty(){
+
+  const contactId=Number(
+    document.getElementById("walletContact").value
+  );
+
+  if(!contactId) return;
+
+  const [loyalty,rules]=await Promise.all([
+    api("/api/loyalty/"+contactId),
+    api("/api/loyalty/rules")
+  ]);
+
+  document.getElementById("loyaltyOverview").innerHTML=`
+    <div class="card panel table-wrap">
+      <div class="panel-title">Wallet ${loyalty.wallet_balance} MAD · ${escapeHtml(loyalty.referral_code||"No code")}</div>
+      <p style="color:var(--muted);font-size:9px">Earned ${loyalty.total_wallet_earned} MAD · Spent ${loyalty.total_wallet_spent} MAD</p>
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Reason</th><th>Status</th></tr></thead>
+        <tbody>${loyalty.ledger.map(entry=>`<tr><td>${escapeHtml(entry.created_at)}</td><td>${escapeHtml(entry.type)}</td><td>${entry.amount} ${escapeHtml(entry.currency)}</td><td>${escapeHtml(entry.reason)}</td><td>${escapeHtml(entry.status)}</td></tr>`).join("")||"<tr><td colspan='5'>No ledger entries</td></tr>"}</tbody>
+      </table>
+      <br>
+      <div class="panel-title">Reward Rules</div>
+      <table>
+        <thead><tr><th>Name</th><th>Range</th><th>Reward</th><th>Mode</th><th>Status</th></tr></thead>
+        <tbody>${rules.rules.map(rule=>`<tr><td>${escapeHtml(rule.name)}</td><td>${rule.min_order_value}–${rule.max_order_value??"+"} MAD</td><td>${rule.reward_value} MAD (cap ${rule.max_reward})</td><td>${escapeHtml(rule.mode)}</td><td>${rule.enabled?"Enabled":"Disabled"}</td></tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+}
+
+
+/* ADVANCED ANALYTICS */
+
+async function loadAdvancedAnalytics(){
+  const range=document.getElementById("analyticsRange").value;
+  const [o,op]=await Promise.all([api("/api/analytics/overview?range="+encodeURIComponent(range)),api("/api/analytics/operational?range="+encodeURIComponent(range))]);
+  const s=o.sales,f=o.funnel,d=o.delivery,c=o.campaigns,l=o.loyalty,a=o.ai,p=o.products;
+  const cards=[["Delivered Revenue",s.delivered_revenue+" MAD"],["Orders",s.total_orders],["Delivered",s.delivered_orders],["Delivered AOV",s.delivered_aov+" MAD"],["Order → Delivered",(s.total_orders?Math.round(s.delivered_orders*10000/s.total_orders)/100:0)+"%"],["Customers",s.total_customers]];
+  const services=Object.values(op.operational.services||{});
+  document.getElementById("analyticsAdvanced").innerHTML=`
+    <div class="kpi-row">${cards.map(x=>`<div class="card kpi"><div class="kpi-name">${escapeHtml(x[0])}</div><div class="kpi-value">${escapeHtml(x[1])}</div><div class="kpi-foot">Supabase durable · TEST/LOCAL</div></div>`).join("")}</div>
+    <div class="split">
+      <div class="card panel"><div class="panel-title">Funnel</div><table><thead><tr><th>Stage</th><th>Count</th><th>Previous</th><th>Top</th></tr></thead><tbody>${f.stages.map(x=>`<tr><td>${escapeHtml(x.id)}</td><td>${x.count}</td><td>${x.from_previous_percent}%</td><td>${x.from_top_percent}%</td></tr>`).join("")}</tbody></table></div>
+      <div class="card panel"><div class="panel-title">Delivery · ${escapeHtml(d.data_mode)}</div><p style="font-size:10px;color:var(--muted)">Created ${d.shipments_created} · Shipped ${d.shipped} · Delivered ${d.delivered} · Failed ${d.delivery_failed} · Returned ${d.returned}</p><p style="font-size:10px">Success ${d.delivery_success_rate}% · Failure ${d.failure_rate}% · Return ${d.return_rate}%</p></div>
+    </div><br>
+    <div class="split">
+      <div class="card panel"><div class="panel-title">Campaigns · DRY-RUN/TEST</div><p style="font-size:10px">Campaigns ${c.campaigns_created} · Audience ${c.audience_count} · Eligible ${c.eligible} · Simulated ${c.simulated_sent} · Skipped ${c.skipped}</p></div>
+      <div class="card panel"><div class="panel-title">Loyalty & Referrals · TEST</div><p style="font-size:10px">Attributed ${l.attributed_referrals} · Qualified ${l.qualified_referrals} · Rewarded ${l.rewarded_referrals} · Liability ${l.outstanding_wallet_liability} MAD</p></div>
+    </div><br>
+    <div class="split">
+      <div class="card panel"><div class="panel-title">AI / RAG · Partial attribution</div><p style="font-size:10px">Attempts ${a.ai_response_attempts} · AI conversations ${a.ai_handled_conversations} · Live handoffs ${a.human_handoffs_live}</p><p style="font-size:9px;color:var(--muted)">${escapeHtml(a.limitations.join(" · "))}</p></div>
+      <div class="card panel"><div class="panel-title">Operational Health · LOCAL</div><p style="font-size:10px">${services.map(x=>`${escapeHtml(x.name)}: ${x.ok?"OK":"ERROR"}`).join(" · ")}</p></div>
+    </div><br>
+    <div class="card panel table-wrap"><div class="panel-title">Top Delivered Products</div><table><thead><tr><th>Product</th><th>Orders</th><th>Revenue</th><th>Customers</th></tr></thead><tbody>${p.top_products.map(x=>`<tr><td>${escapeHtml(x.product)}</td><td>${x.delivered_orders}</td><td>${x.delivered_revenue} MAD</td><td>${x.unique_customers}</td></tr>`).join("")||"<tr><td colspan='4'>No delivered products in range</td></tr>"}</tbody></table></div>`;
+}
+
+
+/* SEARCH */
+
+let searchTimer=null;
+
+document
+.getElementById(
+  "globalSearch"
+)
+.addEventListener(
+  "input",
+  e=>{
+
+    clearTimeout(
+      searchTimer
+    );
+
+    searchTimer=
+      setTimeout(
+        ()=>runSearch(
+          e.target.value
+        ),
+        250
+      );
+  }
+);
+
+
+async function runSearch(q){
+
+  const box=
+    document
+    .getElementById(
+      "searchResults"
+    );
+
+  if(!q.trim()){
+
+    box.style.display=
+      "none";
+
+    return;
+  }
+
+  const d=
+    await api(
+      "/api/search?q="+
+      encodeURIComponent(q)
+    );
+
+  box.innerHTML=
+    d.results.length
+    ?
+    d.results.map(
+      r=>`
+
+        <div class="search-result">
+
+          <strong>
+            ${escapeHtml(r.name)}
+          </strong>
+
+          <div
+            style="
+              color:var(--muted);
+              font-size:9px;
+              margin-top:3px
+            "
+          >
+            Conversation
+            #${r.conversation_id}
+
+            ${
+              r.product
+              ?" • "+escapeHtml(r.product)
+              :""
+            }
+
+          </div>
+
+        </div>
+      `
+    ).join("")
+    :
+    `
+      <div
+        style="
+          padding:20px;
+          text-align:center;
+          color:var(--muted);
+          font-size:10px
+        "
+      >
+        No results
+      </div>
+    `;
+
+  box.style.display=
+    "block";
+
+}
+
+
+/* MODAL */
+
+function openWidgetModal(){
+
+  document
+  .getElementById(
+    "widgetModal"
+  )
+  .classList.add(
+    "open"
+  );
+
+}
+
+function closeWidgetModal(){
+
+  document
+  .getElementById(
+    "widgetModal"
+  )
+  .classList.remove(
+    "open"
+  );
+
+}
+
+
+/* HELPERS */
+
+function escapeHtml(v){
+
+  return String(v??"")
+  .replaceAll("&","&amp;")
+  .replaceAll("<","&lt;")
+  .replaceAll(">","&gt;")
+  .replaceAll('"',"&quot;");
+
+}
+
+
+/* INIT */
+
+loadDashboard();
+
+</script>
+
+</body>
+</html>
+
