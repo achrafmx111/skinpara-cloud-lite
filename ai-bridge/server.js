@@ -57,11 +57,29 @@ const SHOPIFY_ENABLED =
 const SUPABASE_ENABLED =
   process.env.SKINPARA_SUPABASE_ENABLED === "true";
 
-const REDIS_HOST =
+const REDIS_URL = process.env.REDIS_URL || "";
+
+let REDIS_HOST =
   process.env.SKINPARA_REDIS_HOST || "redis";
 
-const REDIS_PORT =
+let REDIS_PORT =
   Number(process.env.SKINPARA_REDIS_PORT || 6379);
+
+let REDIS_USERNAME = "";
+let REDIS_PASSWORD = "";
+
+if (REDIS_URL) {
+  try {
+    const parsedRedisUrl = new URL(REDIS_URL);
+
+    REDIS_HOST = parsedRedisUrl.hostname || REDIS_HOST;
+    REDIS_PORT = Number(parsedRedisUrl.port || REDIS_PORT);
+    REDIS_USERNAME = decodeURIComponent(parsedRedisUrl.username || "");
+    REDIS_PASSWORD = decodeURIComponent(parsedRedisUrl.password || "");
+  } catch {
+    throw new Error("invalid_REDIS_URL");
+  }
+}
 
 const QUEUE_NAME =
   process.env.SKINPARA_QUEUE_NAME ||
@@ -241,9 +259,17 @@ function redisCommand(args) {
     socket.setTimeout(10000);
 
     socket.on("connect", () => {
-      socket.write(
-        redisEncode(args)
-      );
+      if (REDIS_PASSWORD) {
+        const authArgs =
+          REDIS_USERNAME
+            ? ["AUTH", REDIS_USERNAME, REDIS_PASSWORD]
+            : ["AUTH", REDIS_PASSWORD];
+
+        socket.write(redisEncode(authArgs));
+        return;
+      }
+
+      socket.write(redisEncode(args));
     });
 
     socket.on("data", chunk => {
@@ -261,6 +287,24 @@ function redisCommand(args) {
       }
 
       if (!parsed) {
+        return;
+      }
+
+      if (
+        REDIS_PASSWORD &&
+        !socket.__skinparaRedisAuthenticated
+      ) {
+        if (parsed.error) {
+          cleanup();
+          reject(
+            new Error(`redis_auth_error:${parsed.value}`)
+          );
+          return;
+        }
+
+        socket.__skinparaRedisAuthenticated = true;
+        buffer = buffer.subarray(parsed.next);
+        socket.write(redisEncode(args));
         return;
       }
 
@@ -2577,7 +2621,7 @@ function validateCustomerAIResponse(value) {
     return { ok: false, reason: "reasoning_leak" };
   }
 
-  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:سيدتي|سيدي|أختي|أخي|تستعملين|تعانين|تريدين|كتقصدي)/i.test(text)) {
+  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:Ø³ÙŠØ¯ØªÙŠ|Ø³ÙŠØ¯ÙŠ|Ø£Ø®ØªÙŠ|Ø£Ø®ÙŠ|ØªØ³ØªØ¹Ù…Ù„ÙŠÙ†|ØªØ¹Ø§Ù†ÙŠÙ†|ØªØ±ÙŠØ¯ÙŠÙ†|ÙƒØªÙ‚ØµØ¯ÙŠ)/i.test(text)) {
     return { ok: false, reason: "unsupported_gender_assumption" };
   }
 
@@ -2599,7 +2643,7 @@ function validateCustomerAIResponse(value) {
     return { ok: false, reason: "unsupported_stock_claim" };
   }
 
-  if (/(?:same|identical|exactly the same)\s+formula|(?:m[eê]me|identique|exactement la m[eê]me)\s+formule|نفس التركيبة/i.test(text)) {
+  if (/(?:same|identical|exactly the same)\s+formula|(?:m[eÃª]me|identique|exactement la m[eÃª]me)\s+formule|Ù†ÙØ³ Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø©/i.test(text)) {
     return { ok: false, reason: "unsupported_formula_claim" };
   }
 
@@ -2677,9 +2721,9 @@ async function directQueueWorker() {
 }
 
 /**
- * sanitizeCustomerResponse — last-mile deterministic max-3-products enforcer.
+ * sanitizeCustomerResponse â€” last-mile deterministic max-3-products enforcer.
  * productContext() already slices to 3 products in the prompt, but this is a
- * hard safety net — if the model enumerates a 4th product from training data,
+ * hard safety net â€” if the model enumerates a 4th product from training data,
  * we truncate before sending to the customer.
  */
 function sanitizeCustomerResponse(text, contextStr = "") {
@@ -2700,11 +2744,11 @@ function sanitizeCustomerResponse(text, contextStr = "") {
       const urlMatch = line.match(/https?:\/\/[^\s]+/);
       if (urlMatch && !validText.includes(urlMatch[0].toLowerCase())) return null;
     }
-    if (lowerLine.includes('💰') || lowerLine.includes('mad') || lowerLine.includes('درهم')) {
+    if (lowerLine.includes('ðŸ’°') || lowerLine.includes('mad') || lowerLine.includes('Ø¯Ø±Ù‡Ù…')) {
       const priceMatch = line.match(/\d+(\.\d+)?/);
       if (priceMatch && !validText.includes(priceMatch[0])) return null;
     }
-    if (lowerLine.includes('📦') || lowerLine.includes('ml') || lowerLine.includes('g ') || lowerLine.includes('standard')) {
+    if (lowerLine.includes('ðŸ“¦') || lowerLine.includes('ml') || lowerLine.includes('g ') || lowerLine.includes('standard')) {
       const sizeMatch = line.match(/\d+(ml|g)|standard/i);
       if (sizeMatch && !validText.includes(sizeMatch[0].toLowerCase())) return null;
     }
@@ -2718,20 +2762,20 @@ function deterministicAdvisorFallback(userMessage, kind = "unavailable") {
   const value = cleanText(userMessage);
   const lower = value.toLowerCase();
   const isArabic = /[\u0600-\u06ff]/.test(value);
-  const isFrench = /\b(bonjour|salut|merci|peau|cheveux|produit|routine|conseille|voudrais|cherche|explique|deuxième|commander|compare)\b/i.test(lower);
+  const isFrench = /\b(bonjour|salut|merci|peau|cheveux|produit|routine|conseille|voudrais|cherche|explique|deuxiÃ¨me|commander|compare)\b/i.test(lower);
   const isEnglish = /\b(hello|hi|thanks|skin|hair|product|routine|recommend|looking|want)\b/i.test(lower);
 
   if (kind === "unverified") {
-    if (isArabic && /routine|روتين/i.test(lower)) return "باش نبني ليك روتين بسيط وآمن، واش كاين شي منتوج سبق دار حساسية؟ وشنو هو المنظف والمرطب اللي كيتستعملو دابا، إلا كاينين؟";
-    if (isArabic) return "سمح ليا، ما قدرتش نأكد لك جواب موثوق بالمعلومات المتوفرة دابا. نقدر نحول طلبك لمستشار من SkinPara.";
-    if (isFrench) return "Je ne peux pas confirmer une réponse fiable avec les informations disponibles. Je peux transmettre votre demande à un conseiller SkinPara.";
-    if (isEnglish) return "I can’t verify a reliable answer from the available information. I can hand this over to a SkinPara adviser.";
+    if (isArabic && /routine|Ø±ÙˆØªÙŠÙ†/i.test(lower)) return "Ø¨Ø§Ø´ Ù†Ø¨Ù†ÙŠ Ù„ÙŠÙƒ Ø±ÙˆØªÙŠÙ† Ø¨Ø³ÙŠØ· ÙˆØ¢Ù…Ù†ØŒ ÙˆØ§Ø´ ÙƒØ§ÙŠÙ† Ø´ÙŠ Ù…Ù†ØªÙˆØ¬ Ø³Ø¨Ù‚ Ø¯Ø§Ø± Ø­Ø³Ø§Ø³ÙŠØ©ØŸ ÙˆØ´Ù†Ùˆ Ù‡Ùˆ Ø§Ù„Ù…Ù†Ø¸Ù ÙˆØ§Ù„Ù…Ø±Ø·Ø¨ Ø§Ù„Ù„ÙŠ ÙƒÙŠØªØ³ØªØ¹Ù…Ù„Ùˆ Ø¯Ø§Ø¨Ø§ØŒ Ø¥Ù„Ø§ ÙƒØ§ÙŠÙ†ÙŠÙ†ØŸ";
+    if (isArabic) return "Ø³Ù…Ø­ Ù„ÙŠØ§ØŒ Ù…Ø§ Ù‚Ø¯Ø±ØªØ´ Ù†Ø£ÙƒØ¯ Ù„Ùƒ Ø¬ÙˆØ§Ø¨ Ù…ÙˆØ«ÙˆÙ‚ Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ø¯Ø§Ø¨Ø§. Ù†Ù‚Ø¯Ø± Ù†Ø­ÙˆÙ„ Ø·Ù„Ø¨Ùƒ Ù„Ù…Ø³ØªØ´Ø§Ø± Ù…Ù† SkinPara.";
+    if (isFrench) return "Je ne peux pas confirmer une rÃ©ponse fiable avec les informations disponibles. Je peux transmettre votre demande Ã  un conseiller SkinPara.";
+    if (isEnglish) return "I canâ€™t verify a reliable answer from the available information. I can hand this over to a SkinPara adviser.";
     if (/\b(nettoyant|cleanser|gel)\b/i.test(lower)) return "N9der n3awnk nkhtaro b aman. Wach kayn chi produit kaydir lik t7ssas, w chno katsta3mel daba f routine dyalk?";
     return "Sme7 lia, ma 9dertch n2ekked lik jawab mawthou9 b lma3loumat li kayna daba. N9der n7awwel talab dyalk lmostachar mn SkinPara.";
   }
 
-  if (isArabic) return "المستشار الآلي غير متاح مؤقتاً. يقدر واحد من فريق SkinPara يكمل معاك.";
-  if (isFrench) return "Le conseiller automatique est momentanément indisponible. Un membre de l’équipe SkinPara pourra reprendre votre demande.";
+  if (isArabic) return "Ø§Ù„Ù…Ø³ØªØ´Ø§Ø± Ø§Ù„Ø¢Ù„ÙŠ ØºÙŠØ± Ù…ØªØ§Ø­ Ù…Ø¤Ù‚ØªØ§Ù‹. ÙŠÙ‚Ø¯Ø± ÙˆØ§Ø­Ø¯ Ù…Ù† ÙØ±ÙŠÙ‚ SkinPara ÙŠÙƒÙ…Ù„ Ù…Ø¹Ø§Ùƒ.";
+  if (isFrench) return "Le conseiller automatique est momentanÃ©ment indisponible. Un membre de lâ€™Ã©quipe SkinPara pourra reprendre votre demande.";
   if (isEnglish) return "The automated adviser is temporarily unavailable. A SkinPara team member can continue helping you.";
   return "Lmostachar l2ali ma khddamch mowa9atan. Y9der chi wa7ed mn team SkinPara ykemmel m3ak.";
 }
@@ -2748,24 +2792,24 @@ function validateAdvisorLanguage(userMessage, responseText) {
 function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const input = cleanText(userMessage);
   const lower = input.toLowerCase();
-  const ordinal = /(?:second|second one|deuxi[eè]me|الثاني|التاني|هاد الثاني|2[eè]me)/i.test(input) ? 1 :
-    /(?:first|first one|premier|premi[eè]re|الأول|الاول|هاد الأول)/i.test(input) ? 0 : -1;
+  const ordinal = /(?:second|second one|deuxi[eÃ¨]me|Ø§Ù„Ø«Ø§Ù†ÙŠ|Ø§Ù„ØªØ§Ù†ÙŠ|Ù‡Ø§Ø¯ Ø§Ù„Ø«Ø§Ù†ÙŠ|2[eÃ¨]me)/i.test(input) ? 1 :
+    /(?:first|first one|premier|premi[eÃ¨]re|Ø§Ù„Ø£ÙˆÙ„|Ø§Ù„Ø§ÙˆÙ„|Ù‡Ø§Ø¯ Ø§Ù„Ø£ÙˆÙ„)/i.test(input) ? 0 : -1;
   if (ordinal < 0) return null;
 
   const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
   const title = titles[ordinal];
   if (!title) return null;
 
-  const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|بغيت|نطلب|ناخد/i.test(input);
-  const isFrench = /\b(?:deuxi[eè]me|commander|commande|veux|explique|celui)\b/i.test(lower);
+  const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|Ø¨ØºÙŠØª|Ù†Ø·Ù„Ø¨|Ù†Ø§Ø®Ø¯/i.test(input);
+  const isFrench = /\b(?:deuxi[eÃ¨]me|commander|commande|veux|explique|celui)\b/i.test(lower);
   const isEnglish = /\b(?:second|first|want|buy|order|explain|that one)\b/i.test(lower);
   const isArabic = /[\u0600-\u06ff]/.test(input);
 
   if (isPurchase) {
-    if (isFrench) return `D’accord 😊 Vous parlez bien de ${title}. Quelle quantité souhaitez-vous ?`;
-    if (isEnglish) return `Sure 😊 You mean ${title}. What quantity would you like?`;
-    if (isArabic) return `أكيد 😊 المقصود هو ${title}. واش هاد هو المنتج المطلوب؟ وشحال من وحدة؟`;
-    return `أكيد 😊 Kat9sed ${title}. Wach hada howa lproduit li bghiti, w ch7al mn wa7da?`;
+    if (isFrench) return `Dâ€™accord ðŸ˜Š Vous parlez bien de ${title}. Quelle quantitÃ© souhaitez-vous ?`;
+    if (isEnglish) return `Sure ðŸ˜Š You mean ${title}. What quantity would you like?`;
+    if (isArabic) return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Ø§Ù„Ù…Ù‚ØµÙˆØ¯ Ù‡Ùˆ ${title}. ÙˆØ§Ø´ Ù‡Ø§Ø¯ Ù‡Ùˆ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ØŸ ÙˆØ´Ø­Ø§Ù„ Ù…Ù† ÙˆØ­Ø¯Ø©ØŸ`;
+    return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Kat9sed ${title}. Wach hada howa lproduit li bghiti, w ch7al mn wa7da?`;
   }
 
   const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -2773,15 +2817,15 @@ function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const block = blockMatch?.[1] || "";
   const suitable = block.match(/^Suitable for:\s*(.+)$/m)?.[1];
   const usage = block.match(/^Usage:\s*(.+)$/m)?.[1];
-  if (isFrench) return `Le deuxième est ${title}.${suitable ? ` Il convient à : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
+  if (isFrench) return `Le deuxiÃ¨me est ${title}.${suitable ? ` Il convient Ã  : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
   if (isEnglish) return `The selected product is ${title}.${suitable ? ` Suitable for: ${suitable}.` : ""}${usage ? ` Use: ${usage}` : ""}`;
-  if (isArabic) return `المنتج الثاني هو ${title}.${suitable ? ` مناسب لـ: ${suitable}.` : ""}${usage ? ` طريقة الاستعمال: ${usage}` : ""}`;
+  if (isArabic) return `Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø«Ø§Ù†ÙŠ Ù‡Ùˆ ${title}.${suitable ? ` Ù…Ù†Ø§Ø³Ø¨ Ù„Ù€: ${suitable}.` : ""}${usage ? ` Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø§Ø³ØªØ¹Ù…Ø§Ù„: ${usage}` : ""}`;
   return `Lproduit tani howa ${title}.${usage ? ` Tari9at l isti3mal: ${usage}` : ""}`;
 }
 
 function deterministicCatalogComparison(userMessage, catalogContext) {
   const input = cleanText(userMessage);
-  if (!/\b(compare|comparer|comparaison|difference|diff[eé]rence|versus|vs)\b|قارن|الفرق/i.test(input)) return null;
+  if (!/\b(compare|comparer|comparaison|difference|diff[eÃ©]rence|versus|vs)\b|Ù‚Ø§Ø±Ù†|Ø§Ù„ÙØ±Ù‚/i.test(input)) return null;
 
   const context = String(catalogContext || "");
   const titles = [...context.matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
@@ -2801,15 +2845,15 @@ function deterministicCatalogComparison(userMessage, catalogContext) {
     };
   });
 
-  const isFrench = /\b(compare|comparer|comparaison|diff[eé]rence)\b/i.test(input);
+  const isFrench = /\b(compare|comparer|comparaison|diff[eÃ©]rence)\b/i.test(input);
   const isEnglish = /\b(compare|difference|versus|vs)\b/i.test(input) && !isFrench;
   if (isFrench) {
-    return `Comparaison vérifiée :\n\n1️⃣ ${details[0].title}\n\n2️⃣ ${details[1].title}\n\nPoints communs confirmés : ${details[0].category === details[1].category && details[0].category ? `catégorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblé ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptés à ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `même mode d’emploi vérifié.` : ""}\n\nDifférence confirmée : le format indiqué dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
+    return `Comparaison vÃ©rifiÃ©e :\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nPoints communs confirmÃ©s : ${details[0].category === details[1].category && details[0].category ? `catÃ©gorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblÃ© ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptÃ©s Ã  ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `mÃªme mode dâ€™emploi vÃ©rifiÃ©.` : ""}\n\nDiffÃ©rence confirmÃ©e : le format indiquÃ© dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
   }
   if (isEnglish) {
-    return `Verified comparison:\n\n1️⃣ ${details[0].title}\n\n2️⃣ ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
+    return `Verified comparison:\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
   }
-  return `مقارنة بالمعلومات الموثقة فقط:\n\n1️⃣ ${details[0].title}\n\n2️⃣ ${details[1].title}\n\nالفرق المؤكد هو الحجم المكتوب فاسم كل منتج. المعطيات المتوفرة ما كتأكدش أن التركيبة أو التركيز مطابقين.`;
+  return `Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nØ§Ù„ÙØ±Ù‚ Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
 }
 
 async function callAI({
@@ -2834,13 +2878,13 @@ You are SkinPara's WhatsApp sales assistant in Morocco, acting as a professional
 - Make Darija sound extremely natural and professional, not translated.
 - Keep replies concise and conversational. Ask at most 1-2 questions at a time.
 - Keep normal replies under 180 words unless the customer explicitly asks for more detail.
-- Use "الحبوب" (not "الحب") when referring to acne/pimples.
-- Example of natural Darija: "فهمتك 🌸 البشرة الدهنية مع الحبوب كتقدر تكون مزعجة."
-- Example of a natural question: "واش الحبوب كيبانو باستمرار ولا غير من وقت لوقت؟"
+- Use "Ø§Ù„Ø­Ø¨ÙˆØ¨" (not "Ø§Ù„Ø­Ø¨") when referring to acne/pimples.
+- Example of natural Darija: "ÙÙ‡Ù…ØªÙƒ ðŸŒ¸ Ø§Ù„Ø¨Ø´Ø±Ø© Ø§Ù„Ø¯Ù‡Ù†ÙŠØ© Ù…Ø¹ Ø§Ù„Ø­Ø¨ÙˆØ¨ ÙƒØªÙ‚Ø¯Ø± ØªÙƒÙˆÙ† Ù…Ø²Ø¹Ø¬Ø©."
+- Example of a natural question: "ÙˆØ§Ø´ Ø§Ù„Ø­Ø¨ÙˆØ¨ ÙƒÙŠØ¨Ø§Ù†Ùˆ Ø¨Ø§Ø³ØªÙ…Ø±Ø§Ø± ÙˆÙ„Ø§ ØºÙŠØ± Ù…Ù† ÙˆÙ‚Øª Ù„ÙˆÙ‚ØªØŸ"
 
 2. FIRST-CONTACT BEHAVIOR & INTENT
 - If it is only a greeting, greet warmly in the same language and ask how you can help. Do not mention products, checkout, delivery, or assume an order.
-- If they immediately express a concern (e.g., "بشرتي دهنية وكيطلع ليا الحب"), DO NOT output the generic welcome. Acknowledge the concern naturally and ask 1-2 relevant progressive questions.
+- If they immediately express a concern (e.g., "Ø¨Ø´Ø±ØªÙŠ Ø¯Ù‡Ù†ÙŠØ© ÙˆÙƒÙŠØ·Ù„Ø¹ Ù„ÙŠØ§ Ø§Ù„Ø­Ø¨"), DO NOT output the generic welcome. Acknowledge the concern naturally and ask 1-2 relevant progressive questions.
 - For skin or hair concerns, do not recommend immediately unless the customer already supplied enough context. Progressively establish the relevant basics: concern, skin/hair type, sensitivity, duration/severity, current routine, and relevant constraints. Never interrogate with a long questionnaire.
 
 3. NEVER INVENT CUSTOMER NAMES OR GENDER
@@ -2859,13 +2903,13 @@ You are SkinPara's WhatsApp sales assistant in Morocco, acting as a professional
 - Recommend only after the consultation has enough information or the customer directly requests a specific product/category.
 - You MUST format EACH product strictly using this multiline layout. NEVER put multiple fields on the same line.
 
-1️⃣ [Real Product Name]
+1ï¸âƒ£ [Real Product Name]
 
 [1 short sentence description]
 
-💰 الثمن: [Real Price in MAD]
-📦 الحجم: [Real Size if available, else omit line]
-🔗 رابط المنتج: [Real URL if available, else omit line]
+ðŸ’° Ø§Ù„Ø«Ù…Ù†: [Real Price in MAD]
+ðŸ“¦ Ø§Ù„Ø­Ø¬Ù…: [Real Size if available, else omit line]
+ðŸ”— Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ù†ØªØ¬: [Real URL if available, else omit line]
 
 - KEEP A BLANK LINE between products.
 - Translate field labels naturally for French or English customers while preserving the same separate-line layout.
@@ -2873,21 +2917,21 @@ You are SkinPara's WhatsApp sales assistant in Morocco, acting as a professional
 
 6. ROUTINE BUILDER
 - For routines, first ask for missing skin/hair type, concern, sensitivity and current actives when relevant. Use only verified catalog products, avoid incompatible or duplicative actives, and keep the routine minimal. Then output:
-☀️ الصباح
+â˜€ï¸ Ø§Ù„ØµØ¨Ø§Ø­
 1. [Product]
 2. [Product]
 
-🌙 الليل
+ðŸŒ™ Ø§Ù„Ù„ÙŠÙ„
 1. [Product]
 2. [Product]
 
 7. CONTEXT & PURCHASE FLOW
-- Resolve references such as "the second one", "هاد الثاني", "celui-là", or "that one" from the immediately preceding assistant recommendations. Repeat the exact verified product name; never guess when the reference is ambiguous.
+- Resolve references such as "the second one", "Ù‡Ø§Ø¯ Ø§Ù„Ø«Ø§Ù†ÙŠ", "celui-lÃ ", or "that one" from the immediately preceding assistant recommendations. Repeat the exact verified product name; never guess when the reference is ambiguous.
 - Product facts already stated in the immediately preceding assistant recommendation remain valid conversation context for resolving a follow-up. Do not add any fact that was not present there or in the current catalog context.
 - A question, comparison, routine request, or product explanation is not purchase intent.
-- Start purchase confirmation only after explicit intent such as "I want it", "بغيت ناخدو", "je veux le commander", or equivalent.
+- Start purchase confirmation only after explicit intent such as "I want it", "Ø¨ØºÙŠØª Ù†Ø§Ø®Ø¯Ùˆ", "je veux le commander", or equivalent.
 - Before any order step, confirm the exact verified product, exact variant/size when variants exist, and quantity. If any is missing, ask for it. Do not claim an order is created or confirmed.
-- For "بغيت الثاني", answer like: "أكيد 😊 كتقصدي [Product]. واش هاد هو المنتج اللي بغيتي؟ وشحال من وحدة؟" Do not prepare an order yet.
+- For "Ø¨ØºÙŠØª Ø§Ù„Ø«Ø§Ù†ÙŠ", answer like: "Ø£ÙƒÙŠØ¯ ðŸ˜Š ÙƒØªÙ‚ØµØ¯ÙŠ [Product]. ÙˆØ§Ø´ Ù‡Ø§Ø¯ Ù‡Ùˆ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù„ÙŠ Ø¨ØºÙŠØªÙŠØŸ ÙˆØ´Ø­Ø§Ù„ Ù…Ù† ÙˆØ­Ø¯Ø©ØŸ" Do not prepare an order yet.
 - Mention delivery timing only if it is supported by the supplied business context; otherwise omit it.
 
 8. MEDICAL SAFETY
@@ -5540,7 +5584,7 @@ async function handleHumanHandoff(
 
   await sendChatwootMessage(
     conversationId,
-    "غادي نحوّل طلبك لواحد من مستشاري SkinPara باش يكمل معاك بأمان."
+    "ØºØ§Ø¯ÙŠ Ù†Ø­ÙˆÙ‘Ù„ Ø·Ù„Ø¨Ùƒ Ù„ÙˆØ§Ø­Ø¯ Ù…Ù† Ù…Ø³ØªØ´Ø§Ø±ÙŠ SkinPara Ø¨Ø§Ø´ ÙŠÙƒÙ…Ù„ Ù…Ø¹Ø§Ùƒ Ø¨Ø£Ù…Ø§Ù†."
   );
 }
 
@@ -5605,9 +5649,9 @@ async function processIncomingMessage(
     cleanText(payload.content);
 
   // MEDICAL PRE-GUARD
-  if (userMessage && /(حروق|حمرا|يضرني|ألم|حساسية مفرطة|تهيج|ضيق تنفس|تنفس|تورم|burn|pain|swelling|breathing|reaction)/i.test(userMessage)) {
+  if (userMessage && /(Ø­Ø±ÙˆÙ‚|Ø­Ù…Ø±Ø§|ÙŠØ¶Ø±Ù†ÙŠ|Ø£Ù„Ù…|Ø­Ø³Ø§Ø³ÙŠØ© Ù…ÙØ±Ø·Ø©|ØªÙ‡ÙŠØ¬|Ø¶ÙŠÙ‚ ØªÙ†ÙØ³|ØªÙ†ÙØ³|ØªÙˆØ±Ù…|burn|pain|swelling|breathing|reaction)/i.test(userMessage)) {
     log("medical_pre_guard_triggered", { conversationId });
-    const safeMsg = "فهمتك، والسلامة هي الأهم. ما نقدرش نشخّص الحالة ولا نعطي علاج هنا. خاص التواصل بسرعة مع صيدلي أو طبيب جلدية لتقييم الأعراض. وإذا كانت صعوبة فالتنفس أو تورم قوي فالوجه أو العينين، خاص طلب مساعدة طبية مستعجلة فوراً. غادي نحوّل المحادثة لمستشار من SkinPara.";
+    const safeMsg = "ÙÙ‡Ù…ØªÙƒØŒ ÙˆØ§Ù„Ø³Ù„Ø§Ù…Ø© Ù‡ÙŠ Ø§Ù„Ø£Ù‡Ù…. Ù…Ø§ Ù†Ù‚Ø¯Ø±Ø´ Ù†Ø´Ø®Ù‘Øµ Ø§Ù„Ø­Ø§Ù„Ø© ÙˆÙ„Ø§ Ù†Ø¹Ø·ÙŠ Ø¹Ù„Ø§Ø¬ Ù‡Ù†Ø§. Ø®Ø§Øµ Ø§Ù„ØªÙˆØ§ØµÙ„ Ø¨Ø³Ø±Ø¹Ø© Ù…Ø¹ ØµÙŠØ¯Ù„ÙŠ Ø£Ùˆ Ø·Ø¨ÙŠØ¨ Ø¬Ù„Ø¯ÙŠØ© Ù„ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ø£Ø¹Ø±Ø§Ø¶. ÙˆØ¥Ø°Ø§ ÙƒØ§Ù†Øª ØµØ¹ÙˆØ¨Ø© ÙØ§Ù„ØªÙ†ÙØ³ Ø£Ùˆ ØªÙˆØ±Ù… Ù‚ÙˆÙŠ ÙØ§Ù„ÙˆØ¬Ù‡ Ø£Ùˆ Ø§Ù„Ø¹ÙŠÙ†ÙŠÙ†ØŒ Ø®Ø§Øµ Ø·Ù„Ø¨ Ù…Ø³Ø§Ø¹Ø¯Ø© Ø·Ø¨ÙŠØ© Ù…Ø³ØªØ¹Ø¬Ù„Ø© ÙÙˆØ±Ø§Ù‹. ØºØ§Ø¯ÙŠ Ù†Ø­ÙˆÙ‘Ù„ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ù„Ù…Ø³ØªØ´Ø§Ø± Ù…Ù† SkinPara.";
     await sendChatwootMessage(conversationId, safeMsg);
     await addConversationLabel(conversationId, "human-handoff").catch(() => {});
     return { ok: true, reason: "medical_pre_guard_triggered" };
