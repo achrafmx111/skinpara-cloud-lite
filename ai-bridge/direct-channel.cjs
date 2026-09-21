@@ -75,6 +75,15 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         searchCatalog(job.textContent),
         searchProducts(job.textContent)
       ]);
+      // Safe catalog observability: product titles/counts only; no customer text or secrets.
+      const catalogProducts = Array.isArray(catalogResult?.products) ? catalogResult.products : [];
+      const shopifyProducts = Array.isArray(products) ? products : [];
+      console.log("[KAPSO DIRECT] Catalog lookup", JSON.stringify({
+        catalogCount: catalogProducts.length,
+        catalogTitles: catalogProducts.slice(0, 5).map(product => String(product?.title || product?.name || "").slice(0, 120)),
+        shopifyCount: shopifyProducts.length,
+        shopifyTitles: shopifyProducts.slice(0, 5).map(product => String(product?.title || product?.name || "").slice(0, 120))
+      }));
       assistantMessage = await callAdvisor({
         userMessage: job.textContent,
         history: history.map(row => ({ role: row.role, content: row.content })),
