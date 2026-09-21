@@ -2819,69 +2819,39 @@ function validateAdvisorLanguage(userMessage, responseText) {
 
 function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const input = cleanText(userMessage);
-  const lower = input.toLowerCase();
-  const ordinal = /(?:second|second one|deuxi[eè]me|الثاني|التاني|Ù‡Ø§Ø¯ الثاني|2[eè]me)/i.test(input) ? 1 :
-    /(?:first|first one|premier|premi[eè]re|الأول|الاول|Ù‡Ø§Ø¯ الأول)/i.test(input) ? 0 : -1;
+  const ordinal = /(?:second|second one|deuxi[eè]me|الثاني|التاني|هاد الثاني|2[eè]me)/i.test(input) ? 1 : /(?:first|first one|premier|premi[eè]re|الأول|الاول|هاد الأول)/i.test(input) ? 0 : -1;
   if (ordinal < 0) return null;
-
-  const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
+  const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(m => m[1].trim());
   const title = titles[ordinal];
   if (!title) return null;
-
-  const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|بغيت|نطلب|ناخد/i.test(input);
-  const isFrench = /\b(?:deuxi[eè]me|commander|commande|veux|explique|celui)\b/i.test(lower);
-  const isEnglish = /\b(?:second|first|want|buy|order|explain|that one)\b/i.test(lower);
-  const isArabic = /[\u0600-\u06ff]/.test(input);
-
-  if (isPurchase) {
-    if (isFrench) return `D’accord Vous parlez bien de ${title}. Quelle quantité souhaitez-vous ?`;
-    if (isEnglish) return `Sure. You mean ${title}. What quantity would you like?`;
-    if (isArabic) return `أكيد. كتقصد ${title}. شحال من وحدة بغيتي؟`;
-    return `أكيد. Kat9sed ${title}. Ch7al mn wa7da bghiti?`;
+  const purchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|بغيت|نطلب|ناخد/i.test(input);
+  const fr = /\b(?:deuxi[eè]me|commander|commande|veux|explique|celui)\b/i.test(input);
+  const en = /\b(?:second|first|want|buy|order|explain|that one)\b/i.test(input);
+  const ar = /[\u0600-\u06ff]/.test(input);
+  if (purchase) {
+    if (fr) return "D’accord. Vous parlez bien de " + title + ". Quelle quantité souhaitez-vous ?";
+    if (en) return "Sure. You mean " + title + ". What quantity would you like?";
+    if (ar) return "أكيد. كتقصد " + title + ". شحال من وحدة بغيتي؟";
+    return "Wakha. Kat9sed " + title + ". Ch7al mn wa7da bghiti?";
   }
-
-  const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const blockMatch = String(catalogContext || "").match(new RegExp(`Title: ${escapedTitle}([\\s\\S]*?)(?=\\nPRODUCT \\d+|$)`));
-  const block = blockMatch?.[1] || "";
-  const suitable = block.match(/^Suitable for:\s*(.+)$/m)?.[1];
-  const usage = block.match(/^Usage:\s*(.+)$/m)?.[1];
-  if (isFrench) return `Le deuxième est ${title}.${suitable ? ` Il convient à : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
-  if (isEnglish) return `The selected product is ${title}.${suitable ? ` Suitable for: ${suitable}.` : ""}${usage ? ` Use: ${usage}` : ""}`;
-  if (isArabic) return `Ø§Ù„Ù…Ù†ØªØ¬ الثاني Ù‡Ùˆ ${title}.${suitable ? ` Ù…Ù†Ø§Ø³Ø¨ Ù„Ù€: ${suitable}.` : ""}${usage ? ` Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø§Ø³ØªØ¹Ù…Ø§Ù„: ${usage}` : ""}`;
-  return `Lproduit tani howa ${title}.${usage ? ` Tari9at l isti3mal: ${usage}` : ""}`;
+  if (fr) return "Le produit sélectionné est " + title + ".";
+  if (en) return "The selected product is " + title + ".";
+  if (ar) return "المنتج اللي قصدتي هو " + title + ".";
+  return "Lproduit li 9sedti howa " + title + ".";
 }
 
 function deterministicCatalogComparison(userMessage, catalogContext) {
   const input = cleanText(userMessage);
   if (!/\b(compare|comparer|comparaison|difference|diff[eé]rence|versus|vs)\b|قارن|الفرق/i.test(input)) return null;
-
-  const context = String(catalogContext || "");
-  const titles = [...context.matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
+  const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(m => m[1].trim());
   const mentioned = titles.filter(title => input.toLowerCase().includes(title.toLowerCase()));
   const selected = (mentioned.length >= 2 ? mentioned : titles).slice(0, 2);
   if (selected.length < 2) return null;
-
-  const details = selected.map(title => {
-    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const block = context.match(new RegExp(`Title: ${escaped}([\\s\\S]*?)(?=\\nPRODUCT \\d+|$)`))?.[1] || "";
-    return {
-      title,
-      category: block.match(/^Category:\s*(.+)$/m)?.[1],
-      concern: block.match(/^Concern:\s*(.+)$/m)?.[1],
-      suitable: block.match(/^Suitable for:\s*(.+)$/m)?.[1],
-      usage: block.match(/^Usage:\s*(.+)$/m)?.[1]
-    };
-  });
-
-  const isFrench = /\b(compare|comparer|comparaison|diff[eé]rence)\b/i.test(input);
-  const isEnglish = /\b(compare|difference|versus|vs)\b/i.test(input) && !isFrench;
-  if (isFrench) {
-    return `Comparaison vérifiée :\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nPoints communs confirmés : ${details[0].category === details[1].category && details[0].category ? `catégorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblé ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptés à ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `même mode d’emploi vérifié.` : ""}\n\nDifférence confirmée : le format indiqué dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
-  }
-  if (isEnglish) {
-    return `Verified comparison:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
-  }
-  return `Ù…قارنØ© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nالفرق Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
+  const fr = /\b(compare|comparer|comparaison|diff[eé]rence)\b/i.test(input);
+  const en = /\b(compare|difference|versus|vs)\b/i.test(input) && !fr;
+  if (fr) return "Comparaison vérifiée :\n\n1. " + selected[0] + "\n2. " + selected[1] + "\n\nJe peux confirmer uniquement les différences documentées dans le catalogue.";
+  if (en) return "Verified comparison:\n\n1. " + selected[0] + "\n2. " + selected[1] + "\n\nI can confirm only differences documented in the catalog.";
+  return "مقارنة بالمعلومات الموثقة فقط:\n\n1. " + selected[0] + "\n2. " + selected[1] + "\n\nنقدر نأكد غير الفروقات الموثقة فالكاتالوغ.";
 }
 
 async function callAI({
