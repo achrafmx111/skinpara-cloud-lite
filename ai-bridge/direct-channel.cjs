@@ -71,9 +71,18 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       handoffRequired = true;
       await store.markHandoff(inboundEventKey, "medical_risk");
     } else {
+      // Ground product discovery in the customer's recent context, not only
+      // the last short WhatsApp turn (e.g. "give me a cleanser").
+      const recentCustomerContext = (history || [])
+        .filter(row => row.role === "user")
+        .slice(-6)
+        .map(row => clean(row.content))
+        .filter(Boolean)
+        .join(" ");
+      const catalogQuery = recentCustomerContext || clean(job.textContent);
       const [catalogResult, products] = await Promise.all([
-        searchCatalog(job.textContent),
-        searchProducts(job.textContent)
+        searchCatalog(catalogQuery),
+        searchProducts(catalogQuery)
       ]);
       // Safe catalog observability: product titles/counts only; no customer text or secrets.
       const catalogProducts = Array.isArray(catalogResult?.products) ? catalogResult.products : [];
