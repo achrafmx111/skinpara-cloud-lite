@@ -2636,7 +2636,7 @@ function validateCustomerAIResponse(value) {
     return { ok: false, reason: "reasoning_leak" };
   }
 
-  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:Ø³ÙŠØ¯ØªÙŠ|Ø³ÙŠØ¯ÙŠ|Ø£Ø®ØªÙŠ|Ø£Ø®ÙŠ|ØªØ³ØªØ¹Ù…Ù„ÙŠÙ†|ØªØ¹Ø§Ù†ÙŠÙ†|ØªØ±ÙŠØ¯ÙŠÙ†|ÙƒØªÙ‚ØµØ¯ÙŠ)/i.test(text)) {
+  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:سيدتي|سيدي|أختي|أخي|تستعملين|تعانين|تريدين|كتقصدي)/i.test(text)) {
     return { ok: false, reason: "unsupported_gender_assumption" };
   }
 
@@ -2658,7 +2658,7 @@ function validateCustomerAIResponse(value) {
     return { ok: false, reason: "unsupported_stock_claim" };
   }
 
-  if (/(?:same|identical|exactly the same)\s+formula|(?:m[eÃª]me|identique|exactement la m[eÃª]me)\s+formule|Ù†ÙØ³ Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø©/i.test(text)) {
+  if (/(?:same|identical|exactly the same)\s+formula|(?:m[eê]me|identique|exactement la m[eê]me)\s+formule|نفس التركيبة/i.test(text)) {
     return { ok: false, reason: "unsupported_formula_claim" };
   }
 
@@ -2759,11 +2759,11 @@ function sanitizeCustomerResponse(text, contextStr = "") {
       const urlMatch = line.match(/https?:\/\/[^\s]+/);
       if (urlMatch && !validText.includes(urlMatch[0].toLowerCase())) return null;
     }
-    if (lowerLine.includes('ðŸ’°') || lowerLine.includes('mad') || lowerLine.includes('Ø¯Ø±Ù‡Ù…')) {
+    if (lowerLine.includes('mad') || lowerLine.includes('درهم')) {
       const priceMatch = line.match(/\d+(\.\d+)?/);
       if (priceMatch && !validText.includes(priceMatch[0])) return null;
     }
-    if (lowerLine.includes('ðŸ“¦') || lowerLine.includes('ml') || lowerLine.includes('g ') || lowerLine.includes('standard')) {
+    if (lowerLine.includes('ml') || lowerLine.includes('g ') || lowerLine.includes('standard')) {
       const sizeMatch = line.match(/\d+(ml|g)|standard/i);
       if (sizeMatch && !validText.includes(sizeMatch[0].toLowerCase())) return null;
     }
@@ -2777,20 +2777,18 @@ function deterministicAdvisorFallback(userMessage, kind = "unavailable") {
   const value = cleanText(userMessage);
   const lower = value.toLowerCase();
   const isArabic = /[\u0600-\u06ff]/.test(value);
-  const isFrench = /\b(bonjour|salut|merci|peau|cheveux|produit|routine|conseille|voudrais|cherche|explique|deuxiÃ¨me|commander|compare)\b/i.test(lower);
+  const isFrench = /\b(bonjour|salut|merci|peau|cheveux|produit|routine|conseille|voudrais|cherche|explique|deuxième|commander|compare)\b/i.test(lower);
   const isEnglish = /\b(hello|hi|thanks|skin|hair|product|routine|recommend|looking|want)\b/i.test(lower);
 
   if (kind === "unverified") {
-    if (isArabic && /routine|Ø±ÙˆØªÙŠÙ†/i.test(lower)) return "Ø¨Ø§Ø´ Ù†Ø¨Ù†ÙŠ Ù„ÙŠÙƒ Ø±ÙˆØªÙŠÙ† Ø¨Ø³ÙŠØ· ÙˆØ¢Ù…Ù†ØŒ ÙˆØ§Ø´ ÙƒØ§ÙŠÙ† Ø´ÙŠ Ù…Ù†ØªÙˆØ¬ Ø³Ø¨Ù‚ Ø¯Ø§Ø± Ø­Ø³Ø§Ø³ÙŠØ©ØŸ ÙˆØ´Ù†Ùˆ Ù‡Ùˆ Ø§Ù„Ù…Ù†Ø¸Ù ÙˆØ§Ù„Ù…Ø±Ø·Ø¨ Ø§Ù„Ù„ÙŠ ÙƒÙŠØªØ³ØªØ¹Ù…Ù„Ùˆ Ø¯Ø§Ø¨Ø§ØŒ Ø¥Ù„Ø§ ÙƒØ§ÙŠÙ†ÙŠÙ†ØŸ";
-    if (isArabic) return "Ø³Ù…Ø­ Ù„ÙŠØ§ØŒ Ù…Ø§ Ù‚Ø¯Ø±ØªØ´ Ù†Ø£ÙƒØ¯ Ù„Ùƒ Ø¬ÙˆØ§Ø¨ Ù…ÙˆØ«ÙˆÙ‚ Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ø¯Ø§Ø¨Ø§. Ù†Ù‚Ø¯Ø± Ù†Ø­ÙˆÙ„ Ø·Ù„Ø¨Ùƒ Ù„Ù…Ø³ØªØ´Ø§Ø± Ù…Ù† SkinPara.";
-    if (isFrench) return "Je ne peux pas confirmer une rÃ©ponse fiable avec les informations disponibles. Je peux transmettre votre demande Ã  un conseiller SkinPara.";
-    if (isEnglish) return "I canâ€™t verify a reliable answer from the available information. I can hand this over to a SkinPara adviser.";
-    if (/\b(nettoyant|cleanser|gel)\b/i.test(lower)) return "N9der n3awnk nkhtaro b aman. Wach kayn chi produit kaydir lik t7ssas, w chno katsta3mel daba f routine dyalk?";
-    return "Sme7 lia, ma 9dertch n2ekked lik jawab mawthou9 b lma3loumat li kayna daba. N9der n7awwel talab dyalk lmostachar mn SkinPara.";
+    if (isArabic) return "سمح ليا، ما قدرتش نأكد ليك جواب موثوق دابا. نقدر نكمل معاك بسؤال واحد باش نفهم الحالة مزيان، أو نحولك لمستشار من SkinPara.";
+    if (isFrench) return "Je ne peux pas confirmer une réponse fiable pour le moment. Je peux continuer avec une question ciblée ou transmettre votre demande à un conseiller SkinPara.";
+    if (isEnglish) return "I can’t verify a reliable answer right now. I can continue with one focused question or hand this over to a SkinPara adviser.";
+    return "Sme7 lia, ma 9dertch n2ekked jawab mawthou9 daba. N9der nkemmel m3ak b so2al wa7ed wade7, ola n7awlek lmostachar SkinPara.";
   }
 
-  if (isArabic) return "Ø§Ù„Ù…Ø³ØªØ´Ø§Ø± Ø§Ù„Ø¢Ù„ÙŠ ØºÙŠØ± Ù…ØªØ§Ø­ Ù…Ø¤Ù‚ØªØ§Ù‹. ÙŠÙ‚Ø¯Ø± ÙˆØ§Ø­Ø¯ Ù…Ù† ÙØ±ÙŠÙ‚ SkinPara ÙŠÙƒÙ…Ù„ Ù…Ø¹Ø§Ùƒ.";
-  if (isFrench) return "Le conseiller automatique est momentanÃ©ment indisponible. Un membre de lâ€™Ã©quipe SkinPara pourra reprendre votre demande.";
+  if (isArabic) return "المستشار الآلي ما متاحش مؤقتاً. يقدر واحد من فريق SkinPara يكمل معاك.";
+  if (isFrench) return "Le conseiller automatique est momentanément indisponible. Un membre de l’équipe SkinPara pourra reprendre votre demande.";
   if (isEnglish) return "The automated adviser is temporarily unavailable. A SkinPara team member can continue helping you.";
   return "Lmostachar l2ali ma khddamch mowa9atan. Y9der chi wa7ed mn team SkinPara ykemmel m3ak.";
 }
@@ -2822,8 +2820,8 @@ function validateAdvisorLanguage(userMessage, responseText) {
 function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const input = cleanText(userMessage);
   const lower = input.toLowerCase();
-  const ordinal = /(?:second|second one|deuxi[eÃ¨]me|Ø§Ù„Ø«Ø§Ù†ÙŠ|Ø§Ù„ØªØ§Ù†ÙŠ|Ù‡Ø§Ø¯ Ø§Ù„Ø«Ø§Ù†ÙŠ|2[eÃ¨]me)/i.test(input) ? 1 :
-    /(?:first|first one|premier|premi[eÃ¨]re|Ø§Ù„Ø£ÙˆÙ„|Ø§Ù„Ø§ÙˆÙ„|Ù‡Ø§Ø¯ Ø§Ù„Ø£ÙˆÙ„)/i.test(input) ? 0 : -1;
+  const ordinal = /(?:second|second one|deuxi[eè]me|Ø§Ù„Ø«Ø§Ù†ÙŠ|Ø§Ù„ØªØ§Ù†ÙŠ|Ù‡Ø§Ø¯ Ø§Ù„Ø«Ø§Ù†ÙŠ|2[eÃ¨]me)/i.test(input) ? 1 :
+    /(?:first|first one|premier|premi[eè]re|Ø§Ù„Ø£ÙˆÙ„|Ø§Ù„Ø§ÙˆÙ„|Ù‡Ø§Ø¯ Ø§Ù„Ø£ÙˆÙ„)/i.test(input) ? 0 : -1;
   if (ordinal < 0) return null;
 
   const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
@@ -2831,13 +2829,13 @@ function deterministicOrdinalFollowup(userMessage, catalogContext) {
   if (!title) return null;
 
   const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|Ø¨ØºÙŠØª|Ù†Ø·Ù„Ø¨|Ù†Ø§Ø®Ø¯/i.test(input);
-  const isFrench = /\b(?:deuxi[eÃ¨]me|commander|commande|veux|explique|celui)\b/i.test(lower);
+  const isFrench = /\b(?:deuxi[eè]me|commander|commande|veux|explique|celui)\b/i.test(lower);
   const isEnglish = /\b(?:second|first|want|buy|order|explain|that one)\b/i.test(lower);
   const isArabic = /[\u0600-\u06ff]/.test(input);
 
   if (isPurchase) {
-    if (isFrench) return `Dâ€™accord ðŸ˜Š Vous parlez bien de ${title}. Quelle quantitÃ© souhaitez-vous ?`;
-    if (isEnglish) return `Sure ðŸ˜Š You mean ${title}. What quantity would you like?`;
+    if (isFrench) return `D’accord Vous parlez bien de ${title}. Quelle quantité souhaitez-vous ?`;
+    if (isEnglish) return `Sure. You mean ${title}. What quantity would you like?`;
     if (isArabic) return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Ø§Ù„Ù…Ù‚ØµÙˆØ¯ Ù‡Ùˆ ${title}. ÙˆØ§Ø´ Ù‡Ø§Ø¯ Ù‡Ùˆ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ØŸ ÙˆØ´Ø­Ø§Ù„ Ù…Ù† ÙˆØ­Ø¯Ø©ØŸ`;
     return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Kat9sed ${title}. Wach hada howa lproduit li bghiti, w ch7al mn wa7da?`;
   }
@@ -2847,7 +2845,7 @@ function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const block = blockMatch?.[1] || "";
   const suitable = block.match(/^Suitable for:\s*(.+)$/m)?.[1];
   const usage = block.match(/^Usage:\s*(.+)$/m)?.[1];
-  if (isFrench) return `Le deuxiÃ¨me est ${title}.${suitable ? ` Il convient Ã  : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
+  if (isFrench) return `Le deuxième est ${title}.${suitable ? ` Il convient à : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
   if (isEnglish) return `The selected product is ${title}.${suitable ? ` Suitable for: ${suitable}.` : ""}${usage ? ` Use: ${usage}` : ""}`;
   if (isArabic) return `Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø«Ø§Ù†ÙŠ Ù‡Ùˆ ${title}.${suitable ? ` Ù…Ù†Ø§Ø³Ø¨ Ù„Ù€: ${suitable}.` : ""}${usage ? ` Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø§Ø³ØªØ¹Ù…Ø§Ù„: ${usage}` : ""}`;
   return `Lproduit tani howa ${title}.${usage ? ` Tari9at l isti3mal: ${usage}` : ""}`;
@@ -2878,12 +2876,12 @@ function deterministicCatalogComparison(userMessage, catalogContext) {
   const isFrench = /\b(compare|comparer|comparaison|diff[eÃ©]rence)\b/i.test(input);
   const isEnglish = /\b(compare|difference|versus|vs)\b/i.test(input) && !isFrench;
   if (isFrench) {
-    return `Comparaison vÃ©rifiÃ©e :\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nPoints communs confirmÃ©s : ${details[0].category === details[1].category && details[0].category ? `catÃ©gorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblÃ© ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptÃ©s Ã  ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `mÃªme mode dâ€™emploi vÃ©rifiÃ©.` : ""}\n\nDiffÃ©rence confirmÃ©e : le format indiquÃ© dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
+    return `Comparaison vérifiée :\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nPoints communs confirmÃ©s : ${details[0].category === details[1].category && details[0].category ? `catégorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblé ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptÃ©s à ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `même mode d’emploi vérifié.` : ""}\n\nDifférence confirmée : le format indiquÃ© dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
   }
   if (isEnglish) {
-    return `Verified comparison:\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
+    return `Verified comparison:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
   }
-  return `Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1ï¸âƒ£ ${details[0].title}\n\n2ï¸âƒ£ ${details[1].title}\n\nØ§Ù„ÙØ±Ù‚ Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
+  return `Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nØ§Ù„ÙØ±Ù‚ Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
 }
 
 async function callAI({
@@ -2911,7 +2909,7 @@ LANGUAGE — STRICT
 - Never mix scripts or languages unnecessarily. Brand/product names may remain in their official spelling.
 - Never output mojibake, corrupted Unicode, encoding artifacts, or broken characters such as "Ø", "Ù", "Ã", "Â", "â€", "ï¸", or "ðŸ".
 - Do not translate Darija literally from English/French. Sound like a professional Moroccan skincare adviser.
-- Keep normal WhatsApp replies concise, warm, and easy to read. Ask at most 1-2 questions at a time.
+- Keep normal WhatsApp replies short, warm, and conversational. Default to 1-3 short sentences.\n- Ask ONE question per turn by default. Ask two only when they are inseparable.\n- Never repeat a question whose answer is already present in recent conversation history.\n- Treat recent conversation history as known facts. Briefly acknowledge new information and move to the next missing fact.\n- Do not restate the customer's whole story on every turn.\n- Do not use formal Arabic with an Arabic-script Darija customer; use natural Moroccan Darija.\n- Do not mention internal systems, catalog limitations, AI, verification, or handoff unless necessary.\n- If the customer corrects you or says they already answered, apologize briefly, use the earlier answer, and continue without asking it again.
 - For Arabic-script Darija, examples of the desired tone are:
   "فهمتك. البشرة الجافة كتحتاج عناية لطيفة وترطيب مناسب."
   "واش بشرتك غير جافة، ولا حتى حساسة وكتحمر أو كتحك؟"
@@ -2976,7 +2974,7 @@ ${productContext(safeProducts)}
       x.role === "user" ||
       x.role === "assistant"
     )
-    .slice(-3)
+    .slice(-10)
     .filter((x, index, arr) => {
       const isLast = index === arr.length - 1;
 
@@ -3045,7 +3043,7 @@ ${productContext(safeProducts)}
 
             temperature: 0.35,
 
-            max_tokens: 600
+            max_tokens: 320
           })
         }
       );
