@@ -2,9 +2,12 @@ import http from "node:http";
 import { safeFetch as fetch } from './safe-fetch.js';
 
 
+// Embedded catalog listener must use its own loopback port.
+// Northflank injects PORT=8787 for the public AI Bridge; reusing that
+// value here would collide with server.js in the same container.
 const PORT =
   Number(
-    process.env.PORT ||
+    process.env.SKINPARA_CATALOG_PORT ||
     8792
   );
 
