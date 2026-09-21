@@ -3,6 +3,7 @@ const { safeFetch } = require("./safe-fetch.cjs");
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
+const tls = require("tls");
 const catalogRag = require("./catalog-rag.cjs");
 const { createDirectProcessor } = require("./direct-channel.cjs");
 const {
@@ -67,6 +68,8 @@ let REDIS_PORT =
 
 let REDIS_USERNAME = "";
 let REDIS_PASSWORD = "";
+let REDIS_TLS_ENABLED =
+  process.env.REDIS_TLS_ENABLED === "true";
 
 if (REDIS_URL) {
   try {
@@ -76,6 +79,9 @@ if (REDIS_URL) {
     REDIS_PORT = Number(parsedRedisUrl.port || REDIS_PORT);
     REDIS_USERNAME = decodeURIComponent(parsedRedisUrl.username || "");
     REDIS_PASSWORD = decodeURIComponent(parsedRedisUrl.password || "");
+    REDIS_TLS_ENABLED =
+      REDIS_TLS_ENABLED ||
+      parsedRedisUrl.protocol === "rediss:";
   } catch {
     throw new Error("invalid_REDIS_URL");
   }
@@ -242,11 +248,17 @@ function parseRedisValue(buffer, offset = 0) {
 
 function redisCommand(args) {
   return new Promise((resolve, reject) => {
-    const socket =
-      net.createConnection({
-        host: REDIS_HOST,
-        port: REDIS_PORT
-      });
+    const socketOptions = {
+      host: REDIS_HOST,
+      port: REDIS_PORT
+    };
+
+    const socket = REDIS_TLS_ENABLED
+      ? tls.connect({
+          ...socketOptions,
+          servername: REDIS_HOST
+        })
+      : net.createConnection(socketOptions);
 
     let buffer = Buffer.alloc(0);
 
@@ -258,7 +270,10 @@ function redisCommand(args) {
 
     socket.setTimeout(10000);
 
-    socket.on("connect", () => {
+    const connectionEvent =
+      REDIS_TLS_ENABLED ? "secureConnect" : "connect";
+
+    socket.on(connectionEvent, () => {
       if (REDIS_PASSWORD) {
         const authArgs =
           REDIS_USERNAME
