@@ -2736,9 +2736,9 @@ async function directQueueWorker() {
 }
 
 /**
- * sanitizeCustomerResponse â€” last-mile deterministic max-3-products enforcer.
+ * sanitizeCustomerResponse — last-mile deterministic max-3-products enforcer.
  * productContext() already slices to 3 products in the prompt, but this is a
- * hard safety net â€” if the model enumerates a 4th product from training data,
+ * hard safety net — if the model enumerates a 4th product from training data,
  * we truncate before sending to the customer.
  */
 function sanitizeCustomerResponse(text, contextStr = "") {
@@ -5635,7 +5635,7 @@ async function processIncomingMessage(
     cleanText(payload.content);
 
   // MEDICAL PRE-GUARD
-  if (userMessage && /(Ø­Ø±ÙˆÙ‚|Ø­Ù…Ø±Ø§|ÙŠØ¶Ø±Ù†ÙŠ|Ø£Ù„Ù…|Ø­Ø³Ø§Ø³ÙŠØ© Ù…ÙØ±Ø·Ø©|ØªÙ‡ÙŠØ¬|Ø¶ÙŠÙ‚ ØªÙ†ÙØ³|ØªÙ†ÙØ³|ØªÙˆØ±Ù…|burn|pain|swelling|breathing|reaction)/i.test(userMessage)) {
+  if (userMessage && /(حروق|حمرا|يضرني|ألم|حساسية مفرطة|تهيج|ضيق تنفس|تنفس|تورم|burn|pain|swelling|breathing|reaction)/i.test(userMessage)) {
     log("medical_pre_guard_triggered", { conversationId });
     const safeMsg = "فهمتك، والسلامة هي الأهم. ما نقدرش نشخص الحالة ولا نعطي علاج هنا. خاص التواصل بسرعة مع صيدلي أو طبيب جلدية، وإذا كانت صعوبة فالتنفس أو تورم قوي فالوجه أو العينين خاص مساعدة طبية مستعجلة فوراً. غادي نحول المحادثة لمستشار من SkinPara.";
     await sendChatwootMessage(conversationId, safeMsg);
