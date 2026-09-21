@@ -2820,15 +2820,15 @@ function validateAdvisorLanguage(userMessage, responseText) {
 function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const input = cleanText(userMessage);
   const lower = input.toLowerCase();
-  const ordinal = /(?:second|second one|deuxi[eè]me|Ø§Ù„Ø«Ø§Ù†ÙŠ|Ø§Ù„ØªØ§Ù†ÙŠ|Ù‡Ø§Ø¯ Ø§Ù„Ø«Ø§Ù†ÙŠ|2[eÃ¨]me)/i.test(input) ? 1 :
-    /(?:first|first one|premier|premi[eè]re|Ø§Ù„Ø£ÙˆÙ„|Ø§Ù„Ø§ÙˆÙ„|Ù‡Ø§Ø¯ Ø§Ù„Ø£ÙˆÙ„)/i.test(input) ? 0 : -1;
+  const ordinal = /(?:second|second one|deuxi[eè]me|الثاني|التاني|Ù‡Ø§Ø¯ الثاني|2[eè]me)/i.test(input) ? 1 :
+    /(?:first|first one|premier|premi[eè]re|الأول|الاول|Ù‡Ø§Ø¯ الأول)/i.test(input) ? 0 : -1;
   if (ordinal < 0) return null;
 
   const titles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
   const title = titles[ordinal];
   if (!title) return null;
 
-  const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|Ø¨ØºÙŠØª|Ù†Ø·Ù„Ø¨|Ù†Ø§Ø®Ø¯/i.test(input);
+  const isPurchase = /\b(?:want|buy|order|commander|commande|veux|bghit|baghi|nakhd|nakhdo)\b|بغيت|نطلب|ناخد/i.test(input);
   const isFrench = /\b(?:deuxi[eè]me|commander|commande|veux|explique|celui)\b/i.test(lower);
   const isEnglish = /\b(?:second|first|want|buy|order|explain|that one)\b/i.test(lower);
   const isArabic = /[\u0600-\u06ff]/.test(input);
@@ -2836,8 +2836,8 @@ function deterministicOrdinalFollowup(userMessage, catalogContext) {
   if (isPurchase) {
     if (isFrench) return `D’accord Vous parlez bien de ${title}. Quelle quantité souhaitez-vous ?`;
     if (isEnglish) return `Sure. You mean ${title}. What quantity would you like?`;
-    if (isArabic) return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Ø§Ù„Ù…Ù‚ØµÙˆØ¯ Ù‡Ùˆ ${title}. ÙˆØ§Ø´ Ù‡Ø§Ø¯ Ù‡Ùˆ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ØŸ ÙˆØ´Ø­Ø§Ù„ Ù…Ù† ÙˆØ­Ø¯Ø©ØŸ`;
-    return `Ø£ÙƒÙŠØ¯ ðŸ˜Š Kat9sed ${title}. Wach hada howa lproduit li bghiti, w ch7al mn wa7da?`;
+    if (isArabic) return `أكيد. كتقصد ${title}. شحال من وحدة بغيتي؟`;
+    return `أكيد. Kat9sed ${title}. Ch7al mn wa7da bghiti?`;
   }
 
   const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -2847,13 +2847,13 @@ function deterministicOrdinalFollowup(userMessage, catalogContext) {
   const usage = block.match(/^Usage:\s*(.+)$/m)?.[1];
   if (isFrench) return `Le deuxième est ${title}.${suitable ? ` Il convient à : ${suitable}.` : ""}${usage ? ` Utilisation : ${usage}` : ""}`;
   if (isEnglish) return `The selected product is ${title}.${suitable ? ` Suitable for: ${suitable}.` : ""}${usage ? ` Use: ${usage}` : ""}`;
-  if (isArabic) return `Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø«Ø§Ù†ÙŠ Ù‡Ùˆ ${title}.${suitable ? ` Ù…Ù†Ø§Ø³Ø¨ Ù„Ù€: ${suitable}.` : ""}${usage ? ` Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø§Ø³ØªØ¹Ù…Ø§Ù„: ${usage}` : ""}`;
+  if (isArabic) return `Ø§Ù„Ù…Ù†ØªØ¬ الثاني Ù‡Ùˆ ${title}.${suitable ? ` Ù…Ù†Ø§Ø³Ø¨ Ù„Ù€: ${suitable}.` : ""}${usage ? ` Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø§Ø³ØªØ¹Ù…Ø§Ù„: ${usage}` : ""}`;
   return `Lproduit tani howa ${title}.${usage ? ` Tari9at l isti3mal: ${usage}` : ""}`;
 }
 
 function deterministicCatalogComparison(userMessage, catalogContext) {
   const input = cleanText(userMessage);
-  if (!/\b(compare|comparer|comparaison|difference|diff[eÃ©]rence|versus|vs)\b|Ù‚Ø§Ø±Ù†|Ø§Ù„ÙØ±Ù‚/i.test(input)) return null;
+  if (!/\b(compare|comparer|comparaison|difference|diff[eé]rence|versus|vs)\b|قارن|الفرق/i.test(input)) return null;
 
   const context = String(catalogContext || "");
   const titles = [...context.matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
@@ -2873,15 +2873,15 @@ function deterministicCatalogComparison(userMessage, catalogContext) {
     };
   });
 
-  const isFrench = /\b(compare|comparer|comparaison|diff[eÃ©]rence)\b/i.test(input);
+  const isFrench = /\b(compare|comparer|comparaison|diff[eé]rence)\b/i.test(input);
   const isEnglish = /\b(compare|difference|versus|vs)\b/i.test(input) && !isFrench;
   if (isFrench) {
-    return `Comparaison vérifiée :\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nPoints communs confirmÃ©s : ${details[0].category === details[1].category && details[0].category ? `catégorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblé ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptÃ©s à ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `même mode d’emploi vérifié.` : ""}\n\nDifférence confirmée : le format indiquÃ© dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
+    return `Comparaison vérifiée :\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nPoints communs confirmés : ${details[0].category === details[1].category && details[0].category ? `catégorie ${details[0].category}; ` : ""}${details[0].concern === details[1].concern && details[0].concern ? `besoin ciblé ${details[0].concern}; ` : ""}${details[0].suitable === details[1].suitable && details[0].suitable ? `adaptés à ${details[0].suitable}; ` : ""}${details[0].usage === details[1].usage && details[0].usage ? `même mode d’emploi vérifié.` : ""}\n\nDifférence confirmée : le format indiqué dans chaque nom (200 ml contre 500 ml). Le catalogue fourni ne permet pas de conclure que la formule ou la concentration est identique.`;
   }
   if (isEnglish) {
     return `Verified comparison:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nConfirmed difference: the size shown in each product name. The supplied catalog does not establish that their formula or concentration is identical.`;
   }
-  return `Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nØ§Ù„ÙØ±Ù‚ Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
+  return `Ù…قارنØ© Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ÙˆØ«Ù‚Ø© ÙÙ‚Ø·:\n\n1. ${details[0].title}\n\n2. ${details[1].title}\n\nالفرق Ø§Ù„Ù…Ø¤ÙƒØ¯ Ù‡Ùˆ Ø§Ù„Ø­Ø¬Ù… Ø§Ù„Ù…ÙƒØªÙˆØ¨ ÙØ§Ø³Ù… ÙƒÙ„ Ù…Ù†ØªØ¬. Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ù…Ø§ ÙƒØªØ£ÙƒØ¯Ø´ Ø£Ù† Ø§Ù„ØªØ±ÙƒÙŠØ¨Ø© Ø£Ùˆ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù…Ø·Ø§Ø¨Ù‚ÙŠÙ†.`;
 }
 
 async function callAI({
@@ -5600,7 +5600,7 @@ async function handleHumanHandoff(
 
   await sendChatwootMessage(
     conversationId,
-    "ØºØ§Ø¯ÙŠ Ù†Ø­ÙˆÙ‘Ù„ Ø·Ù„Ø¨Ùƒ Ù„ÙˆØ§Ø­Ø¯ Ù…Ù† Ù…Ø³ØªØ´Ø§Ø±ÙŠ SkinPara Ø¨Ø§Ø´ ÙŠÙƒÙ…Ù„ Ù…Ø¹Ø§Ùƒ Ø¨Ø£Ù…Ø§Ù†."
+    "غادي نحول طلبك لواحد من مستشاري SkinPara باش يكمل معاك بأمان."
   );
 }
 
@@ -5667,7 +5667,7 @@ async function processIncomingMessage(
   // MEDICAL PRE-GUARD
   if (userMessage && /(Ø­Ø±ÙˆÙ‚|Ø­Ù…Ø±Ø§|ÙŠØ¶Ø±Ù†ÙŠ|Ø£Ù„Ù…|Ø­Ø³Ø§Ø³ÙŠØ© Ù…ÙØ±Ø·Ø©|ØªÙ‡ÙŠØ¬|Ø¶ÙŠÙ‚ ØªÙ†ÙØ³|ØªÙ†ÙØ³|ØªÙˆØ±Ù…|burn|pain|swelling|breathing|reaction)/i.test(userMessage)) {
     log("medical_pre_guard_triggered", { conversationId });
-    const safeMsg = "ÙÙ‡Ù…ØªÙƒØŒ ÙˆØ§Ù„Ø³Ù„Ø§Ù…Ø© Ù‡ÙŠ Ø§Ù„Ø£Ù‡Ù…. Ù…Ø§ Ù†Ù‚Ø¯Ø±Ø´ Ù†Ø´Ø®Ù‘Øµ Ø§Ù„Ø­Ø§Ù„Ø© ÙˆÙ„Ø§ Ù†Ø¹Ø·ÙŠ Ø¹Ù„Ø§Ø¬ Ù‡Ù†Ø§. Ø®Ø§Øµ Ø§Ù„ØªÙˆØ§ØµÙ„ Ø¨Ø³Ø±Ø¹Ø© Ù…Ø¹ ØµÙŠØ¯Ù„ÙŠ Ø£Ùˆ Ø·Ø¨ÙŠØ¨ Ø¬Ù„Ø¯ÙŠØ© Ù„ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ø£Ø¹Ø±Ø§Ø¶. ÙˆØ¥Ø°Ø§ ÙƒØ§Ù†Øª ØµØ¹ÙˆØ¨Ø© ÙØ§Ù„ØªÙ†ÙØ³ Ø£Ùˆ ØªÙˆØ±Ù… Ù‚ÙˆÙŠ ÙØ§Ù„ÙˆØ¬Ù‡ Ø£Ùˆ Ø§Ù„Ø¹ÙŠÙ†ÙŠÙ†ØŒ Ø®Ø§Øµ Ø·Ù„Ø¨ Ù…Ø³Ø§Ø¹Ø¯Ø© Ø·Ø¨ÙŠØ© Ù…Ø³ØªØ¹Ø¬Ù„Ø© ÙÙˆØ±Ø§Ù‹. ØºØ§Ø¯ÙŠ Ù†Ø­ÙˆÙ‘Ù„ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ù„Ù…Ø³ØªØ´Ø§Ø± Ù…Ù† SkinPara.";
+    const safeMsg = "فهمتك، والسلامة هي الأهم. ما نقدرش نشخص الحالة ولا نعطي علاج هنا. خاص التواصل بسرعة مع صيدلي أو طبيب جلدية، وإذا كانت صعوبة فالتنفس أو تورم قوي فالوجه أو العينين خاص مساعدة طبية مستعجلة فوراً. غادي نحول المحادثة لمستشار من SkinPara.";
     await sendChatwootMessage(conversationId, safeMsg);
     await addConversationLabel(conversationId, "human-handoff").catch(() => {});
     return { ok: true, reason: "medical_pre_guard_triggered" };
