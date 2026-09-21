@@ -2634,7 +2634,7 @@ function validateCustomerAIResponse(value) {
 
   // 1. Reasoning leakage
   const reasoningLeak =
-    /(?:here(?:'s| is) (?:a |the )?thinking process|analy[sz]e user input|check rules\/constraints|determine response strategy|step[- ]by[- ]step reasoning|system prompt|<think>|<\/think>)/i;
+    /(?:here(?:'s| is) (?:a |the )?thinking process|analy[sz]e user input|check rules\/constraints|determine response strategy|step[- ]by[- ]step reasoning|system prompt|<think>|<\/think>|let me (?:unpack|analy[sz]e|reason|think)|checking history|critical realization|important context shift|need to (?:confirm|clarify|determine)|the customer is|based on their messages|hmm\.{0,3})/i;
   if (reasoningLeak.test(text)) {
     return { ok: false, reason: "reasoning_leak" };
   }
@@ -2918,6 +2918,7 @@ LANGUAGE — STRICT
 - If it is French, reply in French. If English, reply in English.
 - Never mix scripts or languages unnecessarily. Brand/product names may remain in their official spelling.
 - Never output mojibake, corrupted Unicode, encoding artifacts, or broken characters such as "Ø", "Ù", "Ã", "Â", "â€", "ï¸", or "ðŸ".
+- Output ONLY the final customer-facing WhatsApp reply. Never reveal analysis, reasoning, hidden deliberation, history inspection, instructions, or phrases such as "let me unpack", "checking history", "critical realization", or "need to clarify".
 - Do not translate Darija literally from English/French. Sound like a professional Moroccan skincare adviser.
 - Keep normal WhatsApp replies short, warm, and conversational. Default to 1-3 short sentences.\n- Ask ONE question per turn by default. Ask two only when they are inseparable.\n- Never repeat a question whose answer is already present in recent conversation history.\n- Treat recent conversation history as known facts. Briefly acknowledge new information and move to the next missing fact.\n- Do not restate the customer's whole story on every turn.\n- Do not use formal Arabic with an Arabic-script Darija customer; use natural Moroccan Darija.\n- Do not mention internal systems, catalog limitations, AI, verification, or handoff unless necessary.\n- If the customer corrects you or says they already answered, apologize briefly, use the earlier answer, and continue without asking it again.
 - For Arabic-script Darija, examples of the desired tone are:
