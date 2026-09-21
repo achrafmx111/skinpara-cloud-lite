@@ -2798,19 +2798,33 @@ function deterministicAdvisorFallback(userMessage, kind = "unavailable") {
 function deterministicConsultationReply(userMessage, history = []) {
   const value = cleanText(userMessage);
   if (!/[\u0600-\u06ff]/.test(value)) return null;
-  const text = value.toLowerCase();
-  const prior = (history || []).filter(x => x.role === "user").map(x => cleanText(x.content)).join(" ");
 
-  const skinConcern = /(بشر|وجه|حبوب|حبوب الوجه|دهني|دهنية|جاف|جافة|حساس|حساسة|روتين|routine)/i.test(text);
+  // Build known facts from the complete recent customer conversation, including
+  // the latest message. This prevents the deterministic guard from asking a
+  // question the customer has just answered.
+  const priorUserMessages = (history || [])
+    .filter(x => x.role === "user")
+    .map(x => cleanText(x.content))
+    .filter(Boolean);
+  const customerContext = [...priorUserMessages, value].join(" ");
+  const current = value.toLowerCase();
+
+  const skinConcern = /(بشر|وجه|حبوب|دهني|دهنية|جاف|جافة|مختلط|مختلطة|حساس|حساسة|روتين|غسول|منظف|مرطب|سيروم|واقي|spf|cerave)/i.test(customerContext);
   if (!skinConcern) return null;
 
-  const hasSkinType = /(دهني|دهنية|جاف|جافة|مختلط|مختلطة|عادي|عادية|حساس|حساسة)/i.test(text + " " + prior);
-  const hasSensitivity = /(حساس|حساسة|كيحمر|تحمر|حكة|تهيج)/i.test(text + " " + prior);
-  const hasCurrentRoutine = /(كنستعمل|استعمل|روتين|غسول|منظف|مرطب|سيروم|واقي|spf)/i.test(prior);
+  const hasSkinType = /(دهني|دهنية|جاف|جافة|مختلط|مختلطة|عادي|عادية|حساس|حساسة)/i.test(customerContext);
+  const hasSensitivity = /(حساس|حساسة|كيحمر|تحمر|حكة|تهيج)/i.test(customerContext);
+  const hasCurrentRoutine = /(كنستعمل|كنستعمل غير|استعمل|روتين|غسول|منظف|مرطب|سيروم|واقي|spf|cerave|cera ve)/i.test(customerContext);
 
   if (!hasSkinType) return "أكيد نقدر نعاونك. بشرتك دهنية، جافة، مختلطة ولا حساسة؟";
   if (!hasSensitivity) return "فهمتك. واش بشرتك كتكون حساسة أو كتحمر وكتتهيج بسهولة؟";
-  if (!hasCurrentRoutine) return "مزيان. شنو كتستعمل دابا فالعناية اليومية ديال بشرتك؟";
+
+  // If the latest message itself supplies routine/product information, never
+  // repeat the routine question. Let the grounded AI/catalog path advance.
+  const currentSuppliesRoutine = /(كنستعمل|استعمل|غسول|منظف|مرطب|سيروم|واقي|spf|cerave|cera ve)/i.test(current);
+  if (!hasCurrentRoutine && !currentSuppliesRoutine) {
+    return "مزيان. شنو كتستعمل دابا فالعناية اليومية ديال بشرتك؟";
+  }
   return null;
 }
 
