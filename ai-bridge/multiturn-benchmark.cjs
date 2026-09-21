@@ -6,6 +6,8 @@
  * Safe: OpenRouter only. No WhatsApp, Shopify writes, delivery or Chatwoot.
  */
 const KEY=process.env.OPENROUTER_API_KEY;
+const REQUEST_DELAY_MS=Number(process.env.SKINPARA_BENCHMARK_DELAY_MS||2500);
+const MAX_429_RETRIES=Number(process.env.SKINPARA_BENCHMARK_429_RETRIES||4);
 const MODELS=(process.env.SKINPARA_BENCHMARK_MODELS||"nvidia/nemotron-3-super-120b-a12b:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free,google/gemma-4-31b-it:free").split(",").map(x=>x.trim()).filter(Boolean);
 if(!KEY){console.error("Missing OPENROUTER_API_KEY; nothing sent.");process.exit(2);}
 
@@ -53,12 +55,21 @@ const conversations=[
 ];
 
 const leak=/(?:let me (?:unpack|analy[sz]e|reason|think)|we need to respond|the user asks|checking history|critical realization|the customer is|we have no|so we must|system prompt|<think>|<\/think>|Ø|Ù|Ã|Â|â€|ï¸|ðŸ)/i;
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function ask(model,messages){
- const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000),start=Date.now();
- try{
+ let last={status:0,text:"",ms:0,error:"unknown"};
+ for(let attempt=0;attempt<=MAX_429_RETRIES;attempt++){
+  if(attempt===0 && REQUEST_DELAY_MS>0) await sleep(REQUEST_DELAY_MS);
+  if(attempt>0) await sleep(Math.min(30000,3000*Math.pow(2,attempt-1)));
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000),start=Date.now();
+  try{
   const r=await fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",signal:ctl.signal,headers:{Authorization:`Bearer ${KEY}`,"Content-Type":"application/json","X-Title":"SkinPara Multi-turn Quality Benchmark"},body:JSON.stringify({model,messages:[{role:"system",content:system},...messages],temperature:.2,max_tokens:240})});
-  const d=await r.json().catch(()=>({}));return {status:r.status,text:String(d?.choices?.[0]?.message?.content||"").trim(),ms:Date.now()-start};
- }catch(e){return {status:0,text:"",ms:Date.now()-start,error:e.name==="AbortError"?"timeout":"network_error"};}finally{clearTimeout(t);}
+  const d=await r.json().catch(()=>({}));
+  last={status:r.status,text:String(d?.choices?.[0]?.message?.content||"").trim(),ms:Date.now()-start,attempt:attempt+1};
+  if(r.status!==429) return last;
+  }catch(e){last={status:0,text:"",ms:Date.now()-start,error:e.name==="AbortError"?"timeout":"network_error",attempt:attempt+1};return last;}finally{clearTimeout(t);}
+ }
+ return last;
 }
 function judge(spec,r){
  const why=[]; if(r.status!==200) why.push(r.status?`http_${r.status}`:(r.error||"network_error"));
