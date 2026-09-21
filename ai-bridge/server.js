@@ -29,7 +29,7 @@ const OPENROUTER_API_KEY =
 
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL ||
-  "nvidia/nemotron-3-super-120b-a12b:free";
+  "google/gemini-2.5-flash-lite";
 
 const SHOPIFY_SHOP =
   process.env.SHOPIFY_SHOP || "";
