@@ -3112,6 +3112,14 @@ ${productContext(safeProducts)}
 
         // Last-mile: enforce catalog safety, then keep WhatsApp output concise.
         const contextStr = (catalogContext || "") + " " + (products ? JSON.stringify(products) : "");
+        // Hard fail-closed catalog guard: when this turn has no verified product
+        // data, never let a model-generated product/brand recommendation reach WhatsApp.
+        // Consultation text is still allowed; explicit recommendation-like output is replaced.
+        const recommendationLike = /(?:recommend|suggest|try|use|buy|product|cleanser|moisturi[sz]er|serum|sunscreen|spf|gel nettoyant|cr[eè]me|s[eé]rum|nettoyant|je (?:vous )?(?:recommande|conseille)|نقترح|ننصح|منتج|منظف|غسول|مرطب|سيروم|واقي)/i.test(validatedContent.text);
+        if (!hasVerifiedCatalogProducts && recommendationLike) {
+          log("catalog_grounding_blocked", { reason: "no_verified_product_data" });
+          return deterministicAdvisorFallback(userMessage, "unverified");
+        }
         let finalText = sanitizeCustomerResponse(validatedContent.text, contextStr);
         if (finalText.length > 1200) {
           const cut = finalText.slice(0, 1200);
