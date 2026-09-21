@@ -2795,6 +2795,25 @@ function deterministicAdvisorFallback(userMessage, kind = "unavailable") {
   return "Lmostachar l2ali ma khddamch mowa9atan. Y9der chi wa7ed mn team SkinPara ykemmel m3ak.";
 }
 
+function deterministicConsultationReply(userMessage, history = []) {
+  const value = cleanText(userMessage);
+  if (!/[\u0600-\u06ff]/.test(value)) return null;
+  const text = value.toLowerCase();
+  const prior = (history || []).filter(x => x.role === "user").map(x => cleanText(x.content)).join(" ");
+
+  const skinConcern = /(بشر|وجه|حبوب|حبوب الوجه|دهني|دهنية|جاف|جافة|حساس|حساسة|روتين|routine)/i.test(text);
+  if (!skinConcern) return null;
+
+  const hasSkinType = /(دهني|دهنية|جاف|جافة|مختلط|مختلطة|عادي|عادية|حساس|حساسة)/i.test(text + " " + prior);
+  const hasSensitivity = /(حساس|حساسة|كيحمر|تحمر|حكة|تهيج)/i.test(text + " " + prior);
+  const hasCurrentRoutine = /(كنستعمل|استعمل|روتين|غسول|منظف|مرطب|سيروم|واقي|spf)/i.test(prior);
+
+  if (!hasSkinType) return "أكيد نقدر نعاونك. بشرتك دهنية، جافة، مختلطة ولا حساسة؟";
+  if (!hasSensitivity) return "فهمتك. واش بشرتك كتكون حساسة أو كتحمر وكتتهيج بسهولة؟";
+  if (!hasCurrentRoutine) return "مزيان. شنو كتستعمل دابا فالعناية اليومية ديال بشرتك؟";
+  return null;
+}
+
 function validateAdvisorLanguage(userMessage, responseText) {
   const input = cleanText(userMessage);
   const output = cleanText(responseText);
@@ -2865,6 +2884,8 @@ async function callAI({
   catalogContext
 }) {
   const safeProducts = (products || []).slice(0, 3);
+  const consultationReply = deterministicConsultationReply(userMessage, history);
+  if (consultationReply) return consultationReply;
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
