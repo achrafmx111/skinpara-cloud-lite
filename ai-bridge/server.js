@@ -2678,7 +2678,11 @@ const directStore = {
     return Array.isArray(result) && result.length > 0;
   },
   async getHistory(conversationKey) {
-    return await supabaseFetch(`/skinpara_channel_messages?conversation_key=eq.${encodeURIComponent(conversationKey)}&select=role,content,created_at,id&order=created_at.asc,id.asc&limit=20`);
+    const rows = await supabaseFetch(`/skinpara_channel_messages?conversation_key=eq.${encodeURIComponent(conversationKey)}&select=role,content,created_at,id&order=created_at.desc,id.desc&limit=20`);
+    // PostgREST applies LIMIT before ordering the returned window. Fetch newest
+    // messages first so long-lived WhatsApp conversations do not get stuck on
+    // their oldest 20 rows, then restore chronological order for the LLM.
+    return Array.isArray(rows) ? rows.reverse() : [];
   },
   async hasEvent(eventKey) {
     const rows = await supabaseFetch(`/skinpara_channel_messages?event_key=eq.${encodeURIComponent(eventKey)}&select=event_key&limit=1`);
