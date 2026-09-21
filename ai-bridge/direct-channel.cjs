@@ -50,6 +50,14 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     }
 
     const history = await store.getHistory(job.conversationKey);
+    // Safe observability: counts/roles only; never log customer message content.
+    console.log("[KAPSO DIRECT] History loaded", JSON.stringify({
+      conversationKeySuffix: String(job.conversationKey || "").slice(-8),
+      rows: Array.isArray(history) ? history.length : 0,
+      userRows: Array.isArray(history) ? history.filter(row => row.role === "user").length : 0,
+      assistantRows: Array.isArray(history) ? history.filter(row => row.role === "assistant").length : 0,
+      newestRole: Array.isArray(history) && history.length ? history[history.length - 1].role : null
+    }));
     let assistantMessage;
     let handoffRequired = false;
 
