@@ -80,10 +80,62 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         .filter(Boolean)
         .join(" ");
       const catalogQuery = recentCustomerContext || clean(job.textContent);
-      const [catalogResult, products] = await Promise.all([
+
+      // Catalog RAG understands one dominant intent per query. A consultation
+      // can contain both a concern (oily/acne) and a requested category
+      // (cleanser), so run a second focused lookup for the requested category
+      // and merge verified catalog rows. This avoids losing "cleanser" when the
+      // first intent parser locks onto "oily".
+      const latestText = clean(job.textContent);
+      const wantsCleanser = /(?:منظف|غسول|cleanser|nettoyant|gel nettoyant)/i.test(latestText);
+      const focusedCatalogQuery = wantsCleanser
+        ? `cleanser nettoyant ${latestText}`
+        : "";
+
+      const [primaryCatalog, focusedCatalog, products] = await Promise.all([
         searchCatalog(catalogQuery),
+        focusedCatalogQuery ? searchCatalog(focusedCatalogQuery) : Promise.resolve(null),
         searchProducts(catalogQuery)
       ]);
+
+      const mergedCatalogProducts = [];
+      const seenCatalogProducts = new Set();
+      for (const result of [focusedCatalog, primaryCatalog]) {
+        for (const product of (Array.isArray(result?.products) ? result.products : [])) {
+          const key = String(product?.id || product?.catalog_key || product?.title || "").toLowerCase();
+          if (!key || seenCatalogProducts.has(key)) continue;
+          seenCatalogProducts.add(key);
+          mergedCatalogProducts.push(product);
+          if (mergedCatalogProducts.length >= 5) break;
+        }
+        if (mergedCatalogProducts.length >= 5) break;
+      }
+
+      const catalogResult = {
+        ...(primaryCatalog || {}),
+        ok: Boolean(primaryCatalog?.ok || focusedCatalog?.ok),
+        fallback: Boolean(primaryCatalog?.fallback && (!focusedCatalog || focusedCatalog?.fallback)),
+        products: mergedCatalogProducts
+      };
+      if (catalogResult.products.length) {
+        catalogResult.context = [
+          "SKINPARA CATALOG INTELLIGENCE:",
+          "Use only the verified products below. Do not invent product facts.",
+          ...catalogResult.products.map((product, index) => [
+            `PRODUCT ${index + 1}`,
+            `Title: ${clean(product?.title)}`,
+            product?.brand ? `Brand: ${clean(product.brand)}` : "",
+            product?.category ? `Category: ${clean(product.category)}` : "",
+            product?.concern ? `Concern: ${clean(product.concern)}` : "",
+            product?.skin_type ? `Suitable for: ${clean(product.skin_type)}` : "",
+            product?.usage ? `Usage: ${clean(product.usage)}` : "",
+            product?.ai_summary ? `Summary: ${clean(product.ai_summary)}` : "",
+            product?.ai_safety ? `Safety: ${clean(product.ai_safety)}` : ""
+          ].filter(Boolean).join("\n"))
+        ].join("\n\n");
+      } else {
+        catalogResult.context = "";
+      }
       // Safe catalog observability: product titles/counts only; no customer text or secrets.
       const catalogProducts = Array.isArray(catalogResult?.products) ? catalogResult.products : [];
       const shopifyProducts = Array.isArray(products) ? products : [];
