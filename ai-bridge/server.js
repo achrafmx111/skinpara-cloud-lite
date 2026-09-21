@@ -2992,6 +2992,19 @@ ${productContext(safeProducts)}
     })
     .slice(-18);
 
+  // Put a compact transcript inside the latest user turn as well as using
+  // native chat messages. Some routed model/provider combinations can underweight
+  // earlier turns; this makes already-known customer facts explicit without
+  // hard-coding skincare answers.
+  const transcript = recentHistory
+    .map(x => `${x.role === "user" ? "Customer" : "SkinPara"}: ${cleanText(x.content)}`)
+    .join("\n")
+    .slice(-5000);
+
+  const contextualUserMessage = transcript
+    ? `RECENT CONVERSATION (facts already given by the customer are known; do not ask for them again):\n${transcript}\n\nLATEST CUSTOMER MESSAGE:\n${userMessage}`
+    : userMessage;
+
   const messages = [
     {
       role: "system",
@@ -3002,7 +3015,7 @@ ${productContext(safeProducts)}
 
     {
       role: "user",
-      content: userMessage
+      content: contextualUserMessage
     }
   ];
   let lastAIError = null;
