@@ -29,7 +29,7 @@ const OPENROUTER_API_KEY =
 
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL ||
-  "google/gemini-2.5-flash-lite";
+  "google/gemini-2.5-flash";
 
 const SHOPIFY_SHOP =
   process.env.SHOPIFY_SHOP || "";
