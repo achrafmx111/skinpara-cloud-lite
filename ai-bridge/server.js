@@ -29,7 +29,7 @@ const OPENROUTER_API_KEY =
 
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL ||
-  "google/gemini-flash-latest";
+  "nvidia/nemotron-3-super-120b-a12b:free";
 
 const SHOPIFY_SHOP =
   process.env.SHOPIFY_SHOP || "";
@@ -1639,15 +1639,13 @@ async function getQueueStatus() {
         AI_ENABLED,
 
       routing:
-        "explicit_free_fallbacks",
+        "single_model",
 
       configured_model:
         OPENROUTER_MODEL,
 
       models: [
-        "nvidia/nemotron-3-super-120b-a12b:free",
-              "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-              "google/gemma-4-31b-it:free"
+        OPENROUTER_MODEL
       ]
     }
 
@@ -2081,7 +2079,7 @@ async function searchProducts(text) {
     }
   `;
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const data =
         await shopifyGraphQL(
@@ -2126,7 +2124,7 @@ async function searchProducts(text) {
         error: e.message
       });
 
-      if (attempt < 3) {
+      if (attempt < 2) {
         const delay =
           attempt === 1
             ? 500
@@ -2901,8 +2899,6 @@ async function callAI({
   catalogContext
 }) {
   const safeProducts = (products || []).slice(0, 3);
-  const consultationReply = deterministicConsultationReply(userMessage, history);
-  if (consultationReply) return consultationReply;
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
@@ -3045,11 +3041,7 @@ ${productContext(safeProducts)}
           },
 
           body: JSON.stringify({
-            models: [
-              "nvidia/nemotron-3-super-120b-a12b:free",
-              "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-              "google/gemma-4-31b-it:free"
-            ],
+            model: OPENROUTER_MODEL,
 
             messages,
 
