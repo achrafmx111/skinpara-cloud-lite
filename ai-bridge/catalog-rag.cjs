@@ -2,7 +2,7 @@
 const CATALOG_URL =
   String(
     process.env.SKINPARA_CATALOG_URL ||
-    "http://skinpara-catalog-service:8792"
+    "http://127.0.0.1:8792"
   ).replace(/\/+$/, "");
 
 
