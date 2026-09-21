@@ -2627,7 +2627,10 @@ function productContext(products) {
 function validateCustomerAIResponse(value) {
   const text = cleanText(value);
   if (!text) return { ok: false, reason: "empty" };
-  if (text.length > 1200) return { ok: false, reason: "too_long" };
+  // The model may occasionally over-explain. Length is a presentation issue,
+  // not a trust/safety failure: trim later instead of discarding an otherwise
+  // valid answer and falling back to a generic message.
+  if (text.length > 4000) return { ok: false, reason: "too_long" };
 
   // 1. Reasoning leakage
   const reasoningLeak =
@@ -3098,9 +3101,16 @@ ${productContext(safeProducts)}
           });
         }
 
-        // Last-mile: enforce max-3-product rule deterministically.
+        // Last-mile: enforce catalog safety, then keep WhatsApp output concise.
         const contextStr = (catalogContext || "") + " " + (products ? JSON.stringify(products) : "");
-        return sanitizeCustomerResponse(validatedContent.text, contextStr);
+        let finalText = sanitizeCustomerResponse(validatedContent.text, contextStr);
+        if (finalText.length > 1200) {
+          const cut = finalText.slice(0, 1200);
+          const boundary = Math.max(cut.lastIndexOf("\n"), cut.lastIndexOf(". "), cut.lastIndexOf("؟"), cut.lastIndexOf("! "));
+          finalText = (boundary >= 500 ? cut.slice(0, boundary + 1) : cut).trim();
+          log("advisor_response_trimmed", { original_length: validatedContent.text.length, final_length: finalText.length });
+        }
+        return finalText;
       }
 
       if (response.ok && (!validatedContent.ok || !languageValidation.ok)) {
