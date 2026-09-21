@@ -2981,21 +2981,16 @@ ${catalogContext || "No catalog intelligence is available."}
 SHOPIFY PRODUCTS
 ${productContext(safeProducts)}
 `.trim();
-  const recentHistory = history
-    .filter(x =>
-      x.role === "user" ||
-      x.role === "assistant"
-    )
-    .slice(-10)
+  // Keep enough recent WhatsApp context for natural multi-turn memory.
+  // The direct store already returns the newest window chronologically.
+  // Remove only the current inbound message because it is appended explicitly below.
+  const recentHistory = (history || [])
+    .filter(x => x.role === "user" || x.role === "assistant")
     .filter((x, index, arr) => {
       const isLast = index === arr.length - 1;
-
-      return !(
-        isLast &&
-        x.role === "user" &&
-        cleanText(x.content) === cleanText(userMessage)
-      );
-    });
+      return !(isLast && x.role === "user" && cleanText(x.content) === cleanText(userMessage));
+    })
+    .slice(-18);
 
   const messages = [
     {
