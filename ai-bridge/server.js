@@ -2903,6 +2903,8 @@ async function callAI({
   catalogContext
 }) {
   const safeProducts = (products || []).slice(0, 3);
+  const hasVerifiedCatalogProducts =
+    safeProducts.length > 0 || /^Title:\\s*.+$/m.test(String(catalogContext || ""));
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
@@ -2939,6 +2941,8 @@ CUSTOMER IDENTITY
 - Prefer gender-neutral Moroccan Darija phrasing when practical.
 
 CATALOG GROUNDING
+- VERIFIED PRODUCT DATA AVAILABLE FOR THIS TURN: ${hasVerifiedCatalogProducts ? "YES" : "NO"}.
+- If this value is NO, you MUST NOT name, recommend, imply, or describe any specific product or brand from general knowledge. Continue the consultation or say that no verified matching product was found.
 - Every product-specific claim must be grounded in CATALOG INTELLIGENCE or SHOPIFY PRODUCTS below.
 - Shopify is authoritative for price, variant and stock-related facts.
 - Never invent a product, price, size, stock state, benefit, ingredient, URL, variant, or availability.
