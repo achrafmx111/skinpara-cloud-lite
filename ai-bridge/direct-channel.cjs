@@ -56,7 +56,12 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       rows: Array.isArray(history) ? history.length : 0,
       userRows: Array.isArray(history) ? history.filter(row => row.role === "user").length : 0,
       assistantRows: Array.isArray(history) ? history.filter(row => row.role === "assistant").length : 0,
-      newestRole: Array.isArray(history) && history.length ? history[history.length - 1].role : null
+      newestRole: Array.isArray(history) && history.length ? history[history.length - 1].role : null,
+      // Diagnostic booleans only: confirm whether the recent customer-history
+      // window contains the already-stated skin-type fact without logging text.
+      hasKnownOilySkinFact: Array.isArray(history) && history.some(row =>
+        row.role === "user" && /(?:دهني|دهنية)/i.test(String(row.content || ""))
+      )
     }));
     let assistantMessage;
     let handoffRequired = false;
