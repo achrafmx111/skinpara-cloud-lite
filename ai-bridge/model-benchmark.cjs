@@ -49,15 +49,15 @@ Do not invent a name, title, or gender.
 Never output mojibake such as Ø, Ù, Ã, Â, â€, ï¸, ðŸ.
 No catalog facts are supplied in this benchmark, so do not make product-specific claims.`;
 
-const leak = /(?:let me (?:unpack|analy[sz]e|reason|think)|checking history|critical realization|the customer is|system prompt|<think>|<\/think>|(?:Ø|Ù|Ã|Â|â€|ï¸|ðŸ))/i;
+const leak = /(?:let me (?:unpack|analy[sz]e|reason|think)|checking history|critical realization|the customer is|the user asks|we need to respond|we have no|the instruction|so we must|meaning ["']|system prompt|<think>|<\/think>|(?:Ø|Ù|Ã|Â|â€|ï¸|ðŸ))/i;
 
 function evaluate(s, text) {
   const reasons = [];
   if (!text) reasons.push("empty");
   if (text.length > 1200) reasons.push("too_long");
-  if (leak.test(text)) reasons.push("reasoning_or_encoding_leak");
   if (s.must && !s.must.test(text)) reasons.push("required_behavior_missing");
   if (s.forbid && s.forbid.test(text)) reasons.push("forbidden_behavior");
+  if (leak.test(text)) reasons.push("reasoning_or_encoding_leak");
   if (s.lang === "arabic" && !/[\u0600-\u06ff]/.test(text)) reasons.push("arabic_script_mismatch");
   if (s.lang === "latin" && /[\u0600-\u06ff]/.test(text)) reasons.push("latin_script_mismatch");
   return reasons;
