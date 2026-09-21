@@ -2636,7 +2636,9 @@ function validateCustomerAIResponse(value) {
     return { ok: false, reason: "reasoning_leak" };
   }
 
-  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:سيدتي|سيدي|أختي|أخي|تستعملين|تعانين|تريدين|كتقصدي)/i.test(text)) {
+  // Reject explicit titles/kinship terms that assume gender. Do not reject ordinary
+  // Arabic verb forms: many valid Darija/Arabic replies use them naturally.
+  if (/\b(?:madame|monsieur|mademoiselle|sir|ma'am|sister|brother)\b|(?:سيدتي|سيدي|أختي|أخي)/i.test(text)) {
     return { ok: false, reason: "unsupported_gender_assumption" };
   }
 
@@ -2894,7 +2896,8 @@ CONSULTATION
 
 CUSTOMER IDENTITY
 - Use only the provided customer name. If it is Unknown, do not invent a name, title, or gender.
-- Do not infer gender from wording, products, symptoms, or phone/contact identifiers.
+- Do not use gendered titles or kinship terms such as سيدتي، سيدي، أختي، أخي unless the customer explicitly supplied that identity.
+- Prefer gender-neutral Moroccan Darija phrasing when practical.
 
 CATALOG GROUNDING
 - Every product-specific claim must be grounded in CATALOG INTELLIGENCE or SHOPIFY PRODUCTS below.
