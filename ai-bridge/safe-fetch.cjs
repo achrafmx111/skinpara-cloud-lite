@@ -2,7 +2,7 @@
 
 const ALLOWED_INTERNAL_HOSTS = [
   'rails', 
-  'skinpara-ai-bridge', 
+  // Loopback is required for the embedded catalog service running in the\n  // same AI Bridge container. Keep this exact-host allowlist entry; private\n  // network ranges remain blocked.\n  '127.0.0.1',\n  'localhost',\n  'skinpara-ai-bridge', 
   'skinpara-catalog-service', 
   'skinpara-control-center', 
   'skinpara-auth-gateway'
