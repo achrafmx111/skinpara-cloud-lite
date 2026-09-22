@@ -2989,6 +2989,18 @@ async function callAI({
     return `Found the verified product: **${requestedVerifiedTitle}**. Here is its product card.`;
   }
 
+  // If the customer names a catalog product that is not present in the
+  // current verified context, fail closed instead of asking the model to guess.
+  const looksLikeSpecificProductRequest =
+    /(?:بغيت|أريد|اريد|je\s+veux|cherche|want|need)/i.test(cleanText(userMessage)) &&
+    /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-ZÀ-Ý]{3,}\s*[–—-])/i.test(cleanText(userMessage));
+  if (looksLikeSpecificProductRequest && verifiedTitles.length && !requestedVerifiedTitle) {
+    if (/[\u0600-\u06ff]/.test(cleanText(userMessage))) {
+      return "هاد المنتج ما قدرتش نأكد عليه دابا من النتائج الموثقة ديال SkinPara. ما غاديش نخمن عليك. نقدر نقلب ليك عليه بالاسم أو نقترح عليك غير منتجات مؤكدة من الكاتالوغ.";
+    }
+    return "I could not verify that exact product in the current SkinPara catalog results, so I will not guess. I can search it by exact name or show only verified catalog options.";
+  }
+
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
