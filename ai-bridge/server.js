@@ -3004,8 +3004,12 @@ async function callAI({
   const looksLikeSpecificProductRequest =
     /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-ZÀ-Ý]{3,}\s*[–—-]\s*[^\n]{3,}|(?:بغيت|أريد|اريد|je\s+veux|cherche|want|need)\s+[^\n]{3,})/i.test(cleanText(userMessage));
   if (looksLikeSpecificProductRequest && verifiedTitles.length && !requestedVerifiedTitle) {
-    if (/[\u0600-\u06ff]/.test(cleanText(userMessage))) {
+    const input = cleanText(userMessage);
+    if (/[\u0600-\u06ff]/.test(input)) {
       return "هاد المنتج ما قدرتش نأكد عليه دابا من النتائج الموثقة ديال SkinPara. ما غاديش نخمن عليك. نقدر نقلب ليك عليه بالاسم أو نقترح عليك غير منتجات مؤكدة من الكاتالوغ.";
+    }
+    if (/\b(?:je|cherche|veux|produit|bonjour|salut|cr[eè]me|peau|vous\s+avez)\b/i.test(input)) {
+      return "Je n’ai pas pu vérifier ce produit exact dans les résultats SkinPara actuels, donc je ne vais rien inventer. Je peux le rechercher par son nom exact ou te proposer uniquement des options vérifiées.";
     }
     return "I could not verify that exact product in the current SkinPara catalog results, so I will not guess. I can search it by exact name or show only verified catalog options.";
   }
