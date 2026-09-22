@@ -75,7 +75,7 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       // the last short WhatsApp turn (e.g. "give me a cleanser").
       const recentCustomerContext = (history || [])
         .filter(row => row.role === "user")
-        .slice(-6)
+        .slice(-20)
         .map(row => clean(row.content))
         .filter(Boolean)
         .join(" ");
