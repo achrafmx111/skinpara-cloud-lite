@@ -1,12 +1,19 @@
 ﻿const dns = require('node:dns/promises');
 
 const ALLOWED_INTERNAL_HOSTS = [
-  'rails', 
-  'skinpara-ai-bridge', 
-  'skinpara-catalog-service', 
-  'skinpara-control-center', 
+  'rails',
+  'skinpara-ai-bridge',
+  'skinpara-catalog-service',
+  'skinpara-control-center',
   'skinpara-auth-gateway'
 ];
+
+function isTrustedInternalHost(host) {
+  // Northflank service discovery may expose the same service with a generated
+  // internal DNS suffix. Trust only exact known service labels or subdomains
+  // rooted at those labels; arbitrary private hosts remain blocked.
+  return ALLOWED_INTERNAL_HOSTS.some(name => host === name || host.startsWith(name + '.'));
+}
 
 const ALLOWED_EXTERNAL_DOMAINS = [
   '.myshopify.com',
@@ -28,7 +35,7 @@ function isPrivateIP(ip) {
 }
 
 function isValidHost(host) {
-  if (ALLOWED_INTERNAL_HOSTS.includes(host)) return true;
+  if (isTrustedInternalHost(host)) return true;
   for (const domain of ALLOWED_EXTERNAL_DOMAINS) {
     if (host === domain || host.endsWith(domain)) {
       return true;
@@ -55,7 +62,7 @@ async function safeFetch(url, options = {}, hop = 0) {
   }
 
   // Check DNS resolution for private IPs unless it's a known internal docker host
-  if (!ALLOWED_INTERNAL_HOSTS.includes(host)) {
+  if (!isTrustedInternalHost(host)) {
     try {
       const addresses = await dns.resolve4(host);
       if (addresses.some(isPrivateIP)) {
