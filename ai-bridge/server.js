@@ -2963,12 +2963,16 @@ async function callAI({
     const coreTitle = normalizedTitle.replace(/\b\d+\s*(?:ml|g|gr|mg)\b/gi, "").replace(/\s+/g, " ").trim();
     return normalizedRequest.includes(normalizedTitle) || (coreTitle.length >= 12 && normalizedRequest.includes(coreTitle));
   });
-  const asksToShowProduct = /(?:وريني|بغيت\s+نشوف|شوفني|montre|voir|show|product|produit|المنتج)/i.test(cleanText(userMessage));
-  if (requestedVerifiedTitle && asksToShowProduct) {
+  // Naming an exact verified catalog product is itself sufficient selection
+  // intent. Do not require magic wording such as "show me the product".
+  if (requestedVerifiedTitle) {
     if (/[\u0600-\u06ff]/.test(cleanText(userMessage))) {
-      return `أكيد. هذا هو المنتج الموثق فـSkinPara: **${requestedVerifiedTitle}**. نقدر نكمل معاك من هنا بلا ما نزيد حتى معلومة غير مؤكدة.`;
+      return `أكيد، لقيت المنتج اللي قصدتي: **${requestedVerifiedTitle}**. ها هو باش تشوف التفاصيل وتكمل الاختيار.`;
     }
-    return `Verified SkinPara product: **${requestedVerifiedTitle}**.`;
+    if (/\b(?:bonjour|salut|produit|je|veux|cherche)\b/i.test(cleanText(userMessage))) {
+      return `J’ai trouvé le produit demandé : **${requestedVerifiedTitle}**. Voici sa fiche pour continuer.`;
+    }
+    return `Found the verified product: **${requestedVerifiedTitle}**. Here is its product card.`;
   }
 
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
