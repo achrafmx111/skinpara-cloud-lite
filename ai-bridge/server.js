@@ -2909,6 +2909,24 @@ async function callAI({
   // treated valid catalog results as empty.
   const hasVerifiedCatalogProducts =
     safeProducts.length > 0 || /^Title:\s*.+$/m.test(String(catalogContext || ""));
+  // A consultation answer is not product-selection intent. If the customer has
+  // just supplied routine/context facts but did not ask for a product/category,
+  // keep the flow consultative instead of allowing the LLM to dump products.
+  const currentInput = cleanText(userMessage);
+  const explicitProductRequest = /(?:عطيني|اقترح|نصحني|بغيت\s+(?:منظف|غسول|مرطب|سيروم|واقي|كريم|منتج)|شنو\s+(?:ناخد|نستعمل)|recommend|suggest|cleanser|moisturi[sz]er|serum|sunscreen|product|conseille|recommande|nettoyant|hydratant|sérum|serum|écran solaire|produit)/i.test(currentInput);
+  const routineFactOnly = /(?:ما\s*عندي(?:ش)?\s+روتين|ما\s*كاين(?:ش)?\s+روتين|غير\s+بالماء|كنغسل\s+وجهي\s+غير|no\s+routine|just\s+water|pas\s+de\s+routine|seulement\s+.*eau)/i.test(currentInput);
+  if (routineFactOnly && !explicitProductRequest) {
+    if (/[\u0600-\u06ff]/.test(currentInput)) {
+      return "مزيان، دابا الصورة واضحة. نقدر نبنيو روتين بسيط خطوة بخطوة بلا ما نكثرو المنتجات. نبداو بالمنظف؟";
+    }
+    if (/\b(?:pas de routine|seulement.*eau)\b/i.test(currentInput)) {
+      return "Parfait, le contexte est clair. On peut construire une routine simple étape par étape. On commence par le nettoyant ?";
+    }
+    if (/\b(?:no routine|just water)\b/i.test(currentInput)) {
+      return "Great, the context is clear. We can build a simple routine step by step. Shall we start with the cleanser?";
+    }
+  }
+
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
