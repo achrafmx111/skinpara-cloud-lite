@@ -314,6 +314,9 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       job.verifiedProductSelections = [rememberedOrdinalProduct];
     }
 
+    const replyLanguage = updatedMemory.language || (/[؀-ۿ]/.test(clean(job.textContent)) ? "ar" : "en");
+    const localized = (ar, fr, en) => replyLanguage === "fr" ? fr : replyLanguage === "en" ? en : ar;
+
     const buttonIntent = clean(job.textContent).toLowerCase();
     const recentAssistantText = (history || []).filter(row => row.role === "assistant").slice(-8).map(row => clean(row.content)).join(" ");
     const recentCatalogProduct = (Array.isArray(job.verifiedProductSelections) ? job.verifiedProductSelections[0] : null)
@@ -341,13 +344,25 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     if (buttonIntent === "skinpara_more_info" || buttonIntent === "voir plus") {
       assistantMessage = recentCatalogProduct?.usage || recentCatalogProduct?.ai_summary
         ? `أكيد. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`
-        : "أكيد. المعلومات الموثقة الإضافية على هاد المنتج ما متوفراش دابا، ونقدر نرجعو للاختيار بلا ما نخمن.";
+        : localized(
+            "أكيد. المعلومات الموثقة الإضافية على هاد المنتج ما متوفراش دابا، ونقدر نرجعو للاختيار بلا ما نخمن.",
+            "Je n’ai pas d’informations vérifiées supplémentaires sur ce produit pour le moment. On peut revenir au choix sans rien inventer.",
+            "I do not have additional verified information for this product right now. We can go back to the selection without guessing."
+          );
     } else if (buttonIntent === "skinpara_back_selection" || buttonIntent === "retour") {
       await savePurchaseState(null);
-      assistantMessage = "أكيد، نرجعو للاختيار. قول ليا واش بغيتي نشوفو منتج آخر ولا نكملو خطوة أخرى فالروتين.";
+      assistantMessage = localized(
+        "أكيد، نرجعو للاختيار. قول ليا واش بغيتي نشوفو منتج آخر ولا نكملو خطوة أخرى فالروتين.",
+        "Bien sûr, revenons au choix. On peut voir un autre produit ou continuer une autre étape de la routine.",
+        "Sure, let’s go back to the selection. We can look at another product or continue with another routine step."
+      );
     } else if (buttonIntent === "skinpara_buy_now" || buttonIntent === "acheter maintenant") {
       if (!recentCatalogProduct) {
-        assistantMessage = "مزيان. قبل ما نكملو الطلب، اختار المنتج من اللائحة باش نأكدوه بلا غلط.";
+        assistantMessage = localized(
+          "مزيان. قبل ما نكملو الطلب، اختار المنتج من اللائحة باش نأكدوه بلا غلط.",
+          "D’accord. Avant de continuer, choisis le produit dans la liste pour qu’on le confirme sans erreur.",
+          "Okay. Before continuing, choose the product from the list so we can confirm it correctly."
+        );
       } else {
         await savePurchaseState({
           step: "quantity",
@@ -364,16 +379,20 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
           order_mode: "test",
           updated_at: now()
         });
-        assistantMessage = `مزيان، أكدنا المنتج: **${clean(recentCatalogProduct.title || recentCatalogProduct.name)}**. شحال من وحدة بغيتي؟ (من 1 حتى 20)`;
+        assistantMessage = localized(\n          `مزيان، أكدنا المنتج: **${clean(recentCatalogProduct.title || recentCatalogProduct.name)}**. شحال من وحدة بغيتي؟ (من 1 حتى 20)`,\n          `Produit confirmé : **${clean(recentCatalogProduct.title || recentCatalogProduct.name)}**. Quelle quantité veux-tu ? (1 à 20)`,\n          `Product confirmed: **${clean(recentCatalogProduct.title || recentCatalogProduct.name)}**. How many units would you like? (1 to 20)`\n        );
       }
     } else if (purchaseState?.step === "quantity" && quantityMatch) {
       const quantity = Number(quantityMatch[1]);
       await savePurchaseState({ ...purchaseState, step: "city", quantity, updated_at: now() });
-      assistantMessage = `تمام، الكمية: **${quantity}**. فاش مدينة غادي يكون التوصيل؟`;
+      assistantMessage = localized(\n        `تمام، الكمية: **${quantity}**. فاش مدينة غادي يكون التوصيل؟`,\n        `Parfait, quantité : **${quantity}**. Dans quelle ville se fera la livraison ?`,\n        `Great, quantity: **${quantity}**. Which city is the delivery for?`\n      );
     } else if (purchaseState?.step === "city" && clean(job.textContent).length >= 2) {
       const city = clean(job.textContent).slice(0, 100);
       await savePurchaseState({ ...purchaseState, step: "address", city, updated_at: now() });
-      assistantMessage = "مزيان. عطيني العنوان أو الحي اللي غادي يكون فيه التوصيل.";
+      assistantMessage = localized(
+        "مزيان. عطيني العنوان أو الحي اللي غادي يكون فيه التوصيل.",
+        "Parfait. Donne-moi l’adresse ou le quartier de livraison.",
+        "Great. Please send the delivery address or neighborhood."
+      );
     } else if (purchaseState?.step === "address" && clean(job.textContent).length >= 3) {
       const nextState = { ...purchaseState, step: "pending_stock", address: clean(job.textContent).slice(0, 250), updated_at: now() };
       await savePurchaseState(nextState);
