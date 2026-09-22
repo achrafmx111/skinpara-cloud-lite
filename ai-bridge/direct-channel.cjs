@@ -102,6 +102,28 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     let assistantMessage;
     let handoffRequired = false;
 
+    // Durable conversational memory: keep a compact, structured view of what
+    // the customer has explicitly said and which verified products were shown.
+    // This complements transcript history and makes long WhatsApp conversations
+    // resilient to topic/product switching without inventing profile facts.
+    const memoryState = typeof store.getConversationMemory === "function"
+      ? (await store.getConversationMemory(job.conversationKey) || {})
+      : {};
+    const currentText = clean(job.textContent);
+    const updatedMemory = { ...memoryState };
+    if (/(?:بشرة\s+دهنية|peau\s+grasse|oily\s+skin)/i.test(currentText)) updatedMemory.skin_type = "oily";
+    if (/(?:بشرة\s+(?:جافة|ناشفة)|peau\s+s[eè]che|dry\s+skin)/i.test(currentText)) updatedMemory.skin_type = "dry";
+    if (/(?:بشرة\s+حساسة|peau\s+sensible|sensitive\s+skin)/i.test(currentText)) updatedMemory.skin_type = "sensitive";
+    if (/(?:حبوب|حب\s+الشباب|boutons|acn[eé]|pimples)/i.test(currentText)) updatedMemory.concern = "acne";
+    if (/(?:تصبغات|بقع|taches|pigmentation|dark\s+spots)/i.test(currentText)) updatedMemory.concern = "pigmentation";
+    if (/[\u0600-\u06ff]/.test(currentText)) updatedMemory.language = "ar";
+    else if (/\b(?:bonjour|salut|je|veux|peau|produit|cr[eè]me)\b/i.test(currentText)) updatedMemory.language = "fr";
+    else if (/\b(?:hello|hi|want|skin|product|cream)\b/i.test(currentText)) updatedMemory.language = "en";
+    updatedMemory.updated_at = now();
+    if (typeof store.saveConversationMemory === "function") {
+      await store.saveConversationMemory(job.conversationKey, updatedMemory);
+    }
+
     if (isMedicalRisk(job.textContent)) {
       assistantMessage = directSafeMedicalReply();
       handoffRequired = true;
@@ -204,7 +226,7 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         userMessage: job.textContent,
         history: history.map(row => ({ role: row.role, content: row.content })),
         products: products || [],
-        memory: null,
+        memory: updatedMemory,
         customerName: null,
         catalogContext: catalogResult?.context || ""
       });
@@ -217,6 +239,14 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         return title && clean(assistantMessage).includes(title);
       }).slice(0, 2);
       if (mentionedCatalogProducts.length) {
+        updatedMemory.recent_products = mentionedCatalogProducts.map(product => ({
+          id: clean(product?.id || product?.catalog_key),
+          title: clean(product?.title || product?.name)
+        }));
+        updatedMemory.updated_at = now();
+        if (typeof store.saveConversationMemory === "function") {
+          await store.saveConversationMemory(job.conversationKey, updatedMemory);
+        }
         job.verifiedProductSelections = mentionedCatalogProducts.map(product => ({
           id: clean(product?.id || product?.catalog_key),
           title: clean(product?.title || product?.name),
