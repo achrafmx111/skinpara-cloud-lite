@@ -51,48 +51,39 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
 
     let history = await store.getHistory(job.conversationKey);
 
-    // Session boundary for a clearly fresh consultation. WhatsApp conversation
-    // storage remains durable, but a new greeting + self-contained concern
-    // should not inherit answers from an older consultation/test session.
-    // Keep this conservative: ordinary follow-ups never reset context.
+    // Persist consultation boundaries from durable message history. A fresh
+    // greeting + concern starts a new session. Follow-ups reuse the newest
+    // matching boundary, so old tests/consultations never leak back in.
     const latestInbound = clean(job.textContent);
-    const freshConsultationStart =
-      /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)(?:\s|[,،.!؟:;-]|$)/i.test(latestInbound) &&
-      /(?:بشر|وجه|حبوب|شعر|روتين|عناية|peau|acn[eé]|cheveux|routine|skin|acne|hair)/i.test(latestInbound);
+    const isConsultationStart = value =>
+      /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)(?:\s|[,،.!؟:;-]|$)/i.test(clean(value)) &&
+      /(?:بشر|وجه|حبوب|شعر|روتين|عناية|peau|acn[eé]|cheveux|routine|skin|acne|hair)/i.test(clean(value));
 
-    if (freshConsultationStart && Array.isArray(history) && history.length > 1) {
-      // Persist a session boundary by selecting only rows at/after this inbound
-      // message on every subsequent turn. The durable store remains untouched.
-      const currentInbound = history[history.length - 1];
-      history = currentInbound ? [currentInbound] : [];
-      console.log("[KAPSO DIRECT] New consultation session", JSON.stringify({
-        conversationKeySuffix: String(job.conversationKey || "").slice(-8),
-        reason: "fresh_greeting_with_concern"
-      }));
-    } else if (Array.isArray(history) && history.length > 1) {
-      // Find the newest prior user message that clearly starts a consultation.
-      // This makes the boundary survive beyond the first turn without deleting
-      // historical messages or requiring a schema migration.
-      let boundary = -1;
+    let boundary = -1;
+    if (Array.isArray(history)) {
       for (let i = history.length - 1; i >= 0; i--) {
-        const row = history[i];
-        const value = clean(row?.content);
-        if (
-          row?.role === "user" &&
-          /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)(?:\\s|[,،.!؟:;-]|$)/i.test(value) &&
-          /(?:بشر|وجه|حبوب|شعر|روتين|عناية|peau|acn[eé]|cheveux|routine|skin|acne|hair)/i.test(value)
-        ) {
+        if (history[i]?.role === "user" && isConsultationStart(history[i]?.content)) {
           boundary = i;
           break;
         }
       }
-      if (boundary > 0) {
-        history = history.slice(boundary);
-        console.log("[KAPSO DIRECT] Consultation session restored", JSON.stringify({
-          conversationKeySuffix: String(job.conversationKey || "").slice(-8),
-          rows: history.length
-        }));
-      }
+    }
+
+    const freshConsultationStart = isConsultationStart(latestInbound);
+    if (freshConsultationStart && Array.isArray(history) && history.length) {
+      // The just-inserted inbound row is the newest row and therefore the
+      // current boundary, regardless of older identical test messages.
+      history = [history[history.length - 1]];
+      console.log("[KAPSO DIRECT] New consultation session", JSON.stringify({
+        conversationKeySuffix: String(job.conversationKey || "").slice(-8),
+        reason: "fresh_greeting_with_concern"
+      }));
+    } else if (boundary >= 0 && Array.isArray(history)) {
+      history = history.slice(boundary);
+      console.log("[KAPSO DIRECT] Consultation session restored", JSON.stringify({
+        conversationKeySuffix: String(job.conversationKey || "").slice(-8),
+        rows: history.length
+      }));
     }
 
     // Safe observability: counts/roles only; never log customer message content.
