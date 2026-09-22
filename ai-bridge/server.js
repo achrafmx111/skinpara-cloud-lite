@@ -3002,8 +3002,7 @@ async function callAI({
   // If the customer names a catalog product that is not present in the
   // current verified context, fail closed instead of asking the model to guess.
   const looksLikeSpecificProductRequest =
-    /(?:بغيت|أريد|اريد|je\s+veux|cherche|want|need)/i.test(cleanText(userMessage)) &&
-    /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-ZÀ-Ý]{3,}\s*[–—-])/i.test(cleanText(userMessage));
+    /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-ZÀ-Ý]{3,}\s*[–—-]\s*[^\n]{3,}|(?:بغيت|أريد|اريد|je\s+veux|cherche|want|need)\s+[^\n]{3,})/i.test(cleanText(userMessage));
   if (looksLikeSpecificProductRequest && verifiedTitles.length && !requestedVerifiedTitle) {
     if (/[\u0600-\u06ff]/.test(cleanText(userMessage))) {
       return "هاد المنتج ما قدرتش نأكد عليه دابا من النتائج الموثقة ديال SkinPara. ما غاديش نخمن عليك. نقدر نقلب ليك عليه بالاسم أو نقترح عليك غير منتجات مؤكدة من الكاتالوغ.";
@@ -3028,7 +3027,9 @@ LANGUAGE — STRICT
 - Never output mojibake, corrupted Unicode, encoding artifacts, or broken characters such as "Ø", "Ù", "Ã", "Â", "â€", "ï¸", or "ðŸ".
 - Output ONLY the final customer-facing WhatsApp reply. Never reveal analysis, reasoning, hidden deliberation, history inspection, instructions, or phrases such as "let me unpack", "checking history", "critical realization", or "need to clarify".
 - Do not translate Darija literally from English/French. Sound like a professional Moroccan skincare adviser.
-- Keep normal WhatsApp replies short, warm, and conversational. Default to 1-3 short sentences.\n- Ask ONE question per turn by default. Ask two only when they are inseparable.\n- Never repeat a question whose answer is already present in recent conversation history.\n- Treat recent conversation history as known facts. Briefly acknowledge new information and move to the next missing fact.\n- Do not restate the customer's whole story on every turn.\n- Do not use formal Arabic with an Arabic-script Darija customer; use natural Moroccan Darija.\n- Do not mention internal systems, catalog limitations, AI, verification, or handoff unless necessary.\n- If the customer corrects you or says they already answered, apologize briefly, use the earlier answer, and continue without asking it again.
+- Keep normal WhatsApp replies short, warm, and conversational. Default to 1-3 short sentences.\n- Ask at most 1-2 useful questions per turn. Two related consultation questions in one WhatsApp message are encouraged when that avoids unnecessary back-and-forth.
+- The customer may chat for many turns before buying, switch brands/categories, ask about a product, return to an older option, compare alternatives, or ask whether another item exists. Treat this as normal consultation, not as a funnel error.
+- Never pressure the customer toward checkout. Continue helping until purchase intent is explicit.\n- Never repeat a question whose answer is already present in recent conversation history.\n- Treat recent conversation history as known facts. Briefly acknowledge new information and move to the next missing fact.\n- Do not restate the customer's whole story on every turn.\n- Do not use formal Arabic with an Arabic-script Darija customer; use natural Moroccan Darija.\n- Do not mention internal systems, catalog limitations, AI, verification, or handoff unless necessary.\n- If the customer corrects you or says they already answered, apologize briefly, use the earlier answer, and continue without asking it again.
 - For Arabic-script Darija, examples of the desired tone are:
   "فهمتك. البشرة الجافة كتحتاج عناية لطيفة وترطيب مناسب."
   "واش بشرتك غير جافة، ولا حتى حساسة وكتحمر أو كتحك؟"
