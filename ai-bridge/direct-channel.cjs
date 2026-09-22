@@ -241,7 +241,15 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       if (mentionedCatalogProducts.length) {
         updatedMemory.recent_products = mentionedCatalogProducts.map(product => ({
           id: clean(product?.id || product?.catalog_key),
-          title: clean(product?.title || product?.name)
+          title: clean(product?.title || product?.name),
+          brand: clean(product?.brand),
+          category: clean(product?.category),
+          usage: clean(product?.usage),
+          ai_summary: clean(product?.ai_summary),
+          image_url: clean(product?.image_url || product?.image),
+          price: product?.price ?? null,
+          variant_id: clean(product?.variant_id || product?.shopify_variant_id),
+          product_id: clean(product?.product_id || product?.shopify_product_id)
         }));
         updatedMemory.updated_at = now();
         if (typeof store.saveConversationMemory === "function") {
@@ -300,10 +308,12 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
 
     const buttonIntent = clean(job.textContent).toLowerCase();
     const recentAssistantText = (history || []).filter(row => row.role === "assistant").slice(-8).map(row => clean(row.content)).join(" ");
-    const recentCatalogProduct = (typeof catalogProducts !== "undefined" ? catalogProducts : []).find(product => {
-      const title = clean(product?.title || product?.name);
-      return title && recentAssistantText.includes(title);
-    }) || (Array.isArray(job.verifiedProductSelections) ? job.verifiedProductSelections[0] : null);
+    const recentCatalogProduct = (Array.isArray(job.verifiedProductSelections) ? job.verifiedProductSelections[0] : null)
+      || hydrateRememberedProduct(rememberedProducts[0])
+      || (typeof catalogProducts !== "undefined" ? catalogProducts : []).find(product => {
+        const title = clean(product?.title || product?.name);
+        return title && recentAssistantText.includes(title);
+      });
 
     // Navigation/purchase-intent signals never create a live order. The direct
     // channel collects quantity and a delivery location, then stops at a
