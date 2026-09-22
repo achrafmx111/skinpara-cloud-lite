@@ -272,6 +272,13 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     const rememberedProducts = Array.isArray(updatedMemory.recent_products)
       ? updatedMemory.recent_products.filter(p => p && p.title).slice(-3)
       : [];
+    const hydrateRememberedProduct = remembered => {
+      if (!remembered) return null;
+      const exact = (typeof catalogProducts !== "undefined" ? catalogProducts : []).find(product =>
+        clean(product?.title || product?.name) === clean(remembered.title)
+      );
+      return exact || remembered;
+    };
     const ordinalText = clean(job.textContent).toLowerCase();
     const ordinalIndex =
       /(?:الثاني|تاني|2(?:nd)?|deuxi[eè]me|second)/i.test(ordinalText) ? 1 :
@@ -279,7 +286,7 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       /(?:الثالث|3(?:rd)?|troisi[eè]me|third)/i.test(ordinalText) ? 2 :
       -1;
     const rememberedOrdinalProduct = ordinalIndex >= 0 && rememberedProducts[ordinalIndex]
-      ? rememberedProducts[ordinalIndex]
+      ? hydrateRememberedProduct(rememberedProducts[ordinalIndex])
       : null;
     if (rememberedOrdinalProduct && /(?:بغيت|ناخد|نختار|عطيني|هذا|هاد|celui|prendre|choisis|want|take|choose|الأول|الاول|الثاني|تاني|الثالث|first|second|third|premier|deuxi[eè]me|troisi[eè]me)/i.test(ordinalText)) {
       const title = clean(rememberedOrdinalProduct.title);
