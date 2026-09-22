@@ -3210,7 +3210,7 @@ ${productContext(safeProducts)}
         // outbound message. Fail closed with a safe customer-facing response
         // instead of violating the durable message content constraint.
         if (!cleanText(finalText)) {
-          log("advisor_grounding_sanitized_empty", { model, reason: "unsupported_product_claims" });
+          log("advisor_grounding_sanitized_empty", { model: data.model || OPENROUTER_MODEL, reason: "unsupported_product_claims" });
           finalText = deterministicAdvisorFallback(userMessage, "unverified");
         }
         if (finalText.length > 1200) {
