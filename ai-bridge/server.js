@@ -3093,7 +3093,12 @@ MEDICAL SAFETY
 
 CUSTOMER CONTEXT
 Name: ${customerName || "Unknown"}
-Memory: ${cleanText(memory?.last_summary || "").slice(0, 220) || "None"}
+Memory (facts explicitly learned from this conversation; use them naturally and never invent missing fields): ${memory && typeof memory === "object" ? JSON.stringify({
+  skin_type: memory.skin_type || null,
+  concern: memory.concern || null,
+  language: memory.language || null,
+  recent_products: Array.isArray(memory.recent_products) ? memory.recent_products.slice(-3) : []
+}).slice(0, 900) : "None"}
 
 CATALOG INTELLIGENCE
 ${catalogContext || "No catalog intelligence is available."}
