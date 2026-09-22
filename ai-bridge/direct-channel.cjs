@@ -49,7 +49,26 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       if (alreadyCompleted) return { ignored: true, reason: "duplicate_message_id" };
     }
 
-    const history = await store.getHistory(job.conversationKey);
+    let history = await store.getHistory(job.conversationKey);
+
+    // Session boundary for a clearly fresh consultation. WhatsApp conversation
+    // storage remains durable, but a new greeting + self-contained concern
+    // should not inherit answers from an older consultation/test session.
+    // Keep this conservative: ordinary follow-ups never reset context.
+    const latestInbound = clean(job.textContent);
+    const freshConsultationStart =
+      /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)\b/i.test(latestInbound) &&
+      /(?:بشر|وجه|حبوب|شعر|روتين|عناية|peau|acn[eé]|cheveux|routine|skin|acne|hair)/i.test(latestInbound);
+
+    if (freshConsultationStart && Array.isArray(history) && history.length > 1) {
+      const currentInbound = history[history.length - 1];
+      history = currentInbound ? [currentInbound] : [];
+      console.log("[KAPSO DIRECT] New consultation session", JSON.stringify({
+        conversationKeySuffix: String(job.conversationKey || "").slice(-8),
+        reason: "fresh_greeting_with_concern"
+      }));
+    }
+
     // Safe observability: counts/roles only; never log customer message content.
     console.log("[KAPSO DIRECT] History loaded", JSON.stringify({
       conversationKeySuffix: String(job.conversationKey || "").slice(-8),
