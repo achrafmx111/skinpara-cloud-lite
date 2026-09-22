@@ -143,7 +143,18 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         catalogCount: catalogProducts.length,
         catalogTitles: catalogProducts.slice(0, 5).map(product => String(product?.title || product?.name || "").slice(0, 120)),
         shopifyCount: shopifyProducts.length,
-        shopifyTitles: shopifyProducts.slice(0, 5).map(product => String(product?.title || product?.name || "").slice(0, 120))
+        shopifyTitles: shopifyProducts.slice(0, 5).map(product => String(product?.title || product?.name || "").slice(0, 120)),
+        // Safe diagnostics only: no customer text, URLs, tokens or secrets.
+        catalogEnabled: primaryCatalog?.enabled ?? null,
+        catalogOk: primaryCatalog?.ok ?? null,
+        catalogFallback: primaryCatalog?.fallback ?? null,
+        catalogReason: primaryCatalog?.reason || null,
+        catalogIntent: primaryCatalog?.intelligence?.intent || null,
+        focusedCatalogEnabled: focusedCatalog?.enabled ?? null,
+        focusedCatalogOk: focusedCatalog?.ok ?? null,
+        focusedCatalogFallback: focusedCatalog?.fallback ?? null,
+        focusedCatalogReason: focusedCatalog?.reason || null,
+        focusedCatalogIntent: focusedCatalog?.intelligence?.intent || null
       }));
       assistantMessage = await callAdvisor({
         userMessage: job.textContent,
