@@ -57,7 +57,7 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     // Keep this conservative: ordinary follow-ups never reset context.
     const latestInbound = clean(job.textContent);
     const freshConsultationStart =
-      /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)\b/i.test(latestInbound) &&
+      /^(?:سلام|السلام|اهلا|أهلا|bonjour|salut|hello|hi)(?:\s|[,،.!؟:;-]|$)/i.test(latestInbound) &&
       /(?:بشر|وجه|حبوب|شعر|روتين|عناية|peau|acn[eé]|cheveux|routine|skin|acne|hair)/i.test(latestInbound);
 
     if (freshConsultationStart && Array.isArray(history) && history.length > 1) {
