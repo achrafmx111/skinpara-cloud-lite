@@ -767,33 +767,43 @@ async function sendDirectKapsoEvent(event) {
 
   const isNew = await deduplicateKapsoMessage(redis, `direct-out:${event.eventKey}`);
   if (!isNew) return { ok: true, ignored: true, reason: "duplicate_outbound" };
-  // Product-card transport is fail-closed: only render structured data that
-  // the AI bridge already matched to exact verified catalog rows. Price/image
-  // are shown only when those fields are actually present; never invent them.
+  // Product-card transport is fail-closed: render only exact verified rows.
   const verifiedProducts = Array.isArray(event.verifiedProducts)
     ? event.verifiedProducts.filter(product => product && product.title).slice(0, 2)
     : [];
   const product = verifiedProducts[0] || null;
   const hasVerifiedImage = Boolean(product?.image_url && /^https:\/\//i.test(String(product.image_url)));
-  const priceText = product?.price !== null && product?.price !== undefined && String(product.price).trim()
-    ? `\nPrix: ${String(product.price).trim()} MAD`
-    : "";
-  const cardCaption = product
+  const hasVerifiedPrice = product?.price !== null && product?.price !== undefined && String(product.price).trim();
+  const priceText = hasVerifiedPrice ? `\nPrix: ${String(product.price).trim()} MAD` : "";
+  const productBody = product
     ? `${product.title}${priceText}\n\n${event.content}`.trim()
     : event.content;
 
-  // Use a real WhatsApp image card when a verified HTTPS product image exists.
-  // Otherwise keep the safe text response until Shopify/catalog mapping supplies
-  // image/price. Buttons are intentionally not fabricated here: native Kapso
-  // interactive payload support must be verified before enabling them.
-  const kapsoPayload = hasVerifiedImage
+  // Kapso supports WhatsApp interactive button messages. Use them for a
+  // verified product selection; never attach an unverified URL/price.
+  // "Acheter maintenant" is an intent button only: ORDER_MODE remains TEST and
+  // no Shopify order is created by this transport layer.
+  const kapsoPayload = product
     ? {
         messaging_product: "whatsapp",
         to: process.env.KAPSO_SANDBOX_ALLOWED_TO,
-        type: "image",
-        image: {
-          link: String(product.image_url),
-          caption: cardCaption.slice(0, 1024)
+        type: "interactive",
+        interactive: {
+          type: "button",
+          ...(hasVerifiedImage ? {
+            header: {
+              type: "image",
+              image: { link: String(product.image_url) }
+            }
+          } : {}),
+          body: { text: productBody.slice(0, 1024) },
+          action: {
+            buttons: [
+              { type: "reply", reply: { id: "skinpara_buy_now", title: "Acheter maintenant" } },
+              { type: "reply", reply: { id: "skinpara_more_info", title: "Voir plus" } },
+              { type: "reply", reply: { id: "skinpara_back_selection", title: "Retour" } }
+            ]
+          }
         }
       }
     : {
