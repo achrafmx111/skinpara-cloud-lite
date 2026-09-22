@@ -75,8 +75,26 @@ export function parseKapsoInbound(payload) {
   const senderPhone = conversation.phone_number;
   const messageId = kapsoMeta.id || message.id; // defensive
   
-  // The exact text leaf is unproven
-  const textContent = kapsoMeta.content || kapsoMeta.text || message.text?.body;
+  // Normalize both ordinary text and WhatsApp interactive reply buttons.
+  // Kapso may expose the selected button title in kapso.content while the
+  // stable reply id lives on the WhatsApp interactive payload. Prefer the id
+  // so downstream business logic receives a deterministic action.
+  const interactiveReplyId =
+    message.interactive?.button_reply?.id ||
+    kapsoMeta.interactive?.button_reply?.id ||
+    message.button_reply?.id ||
+    kapsoMeta.button_reply?.id;
+  const interactiveReplyTitle =
+    message.interactive?.button_reply?.title ||
+    kapsoMeta.interactive?.button_reply?.title ||
+    message.button_reply?.title ||
+    kapsoMeta.button_reply?.title;
+  const textContent =
+    interactiveReplyId ||
+    kapsoMeta.content ||
+    kapsoMeta.text ||
+    message.text?.body ||
+    interactiveReplyTitle;
   
   if (!phoneNumberId || !senderPhone || !messageId) {
     return { ok: false, reason: "unsupported_payload", detail: "missing_identifiers" };
