@@ -767,12 +767,41 @@ async function sendDirectKapsoEvent(event) {
 
   const isNew = await deduplicateKapsoMessage(redis, `direct-out:${event.eventKey}`);
   if (!isNew) return { ok: true, ignored: true, reason: "duplicate_outbound" };
-  const kapsoPayload = {
-    messaging_product: "whatsapp",
-    to: process.env.KAPSO_SANDBOX_ALLOWED_TO,
-    text: { body: event.content },
-    type: "text"
-  };
+  // Product-card transport is fail-closed: only render structured data that
+  // the AI bridge already matched to exact verified catalog rows. Price/image
+  // are shown only when those fields are actually present; never invent them.
+  const verifiedProducts = Array.isArray(event.verifiedProducts)
+    ? event.verifiedProducts.filter(product => product && product.title).slice(0, 2)
+    : [];
+  const product = verifiedProducts[0] || null;
+  const hasVerifiedImage = Boolean(product?.image_url && /^https:\/\//i.test(String(product.image_url)));
+  const priceText = product?.price !== null && product?.price !== undefined && String(product.price).trim()
+    ? `\nPrix: ${String(product.price).trim()} MAD`
+    : "";
+  const cardCaption = product
+    ? `${product.title}${priceText}\n\n${event.content}`.trim()
+    : event.content;
+
+  // Use a real WhatsApp image card when a verified HTTPS product image exists.
+  // Otherwise keep the safe text response until Shopify/catalog mapping supplies
+  // image/price. Buttons are intentionally not fabricated here: native Kapso
+  // interactive payload support must be verified before enabling them.
+  const kapsoPayload = hasVerifiedImage
+    ? {
+        messaging_product: "whatsapp",
+        to: process.env.KAPSO_SANDBOX_ALLOWED_TO,
+        type: "image",
+        image: {
+          link: String(product.image_url),
+          caption: cardCaption.slice(0, 1024)
+        }
+      }
+    : {
+        messaging_product: "whatsapp",
+        to: process.env.KAPSO_SANDBOX_ALLOWED_TO,
+        text: { body: event.content },
+        type: "text"
+      };
   const requestDetails = buildKapsoOutboundRequest(kapsoPayload, process.env.KAPSO_SANDBOX_PHONE_NUMBER_ID, process.env.KAPSO_API_KEY);
   try {
     const response = await fetch(requestDetails.url, requestDetails);
