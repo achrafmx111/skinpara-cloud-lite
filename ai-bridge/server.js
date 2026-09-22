@@ -2944,7 +2944,7 @@ CONSULTATION
 CUSTOMER IDENTITY
 - Use only the provided customer name. If it is Unknown, do not invent a name, title, or gender.
 - Do not use gendered titles or kinship terms such as سيدتي، سيدي، أختي، أخي unless the customer explicitly supplied that identity.
-- In Arabic-script Darija, avoid gendered verb endings when gender is unknown (for example بغيتي/تعرفي/تستعملي). Prefer neutral constructions such as "واش بغيتي نكملو؟", "شنو كاين فالروتين دابا؟", or wording that does not assume gender.
+- In Arabic-script Darija, gender-neutral wording is mandatory when gender is unknown. Never use gender-marked customer verbs such as كتستعملي/كتستعمل، تعرفي/تعرف، تقدري/تقدر, or similar feminine/masculine addressing when a neutral construction exists. Prefer noun-based phrasing such as "شنو الروتين الحالي ديالك؟", "شنو كاين فالروتين دابا؟", "واش نكملو؟". Before returning an Arabic/Darija reply, rewrite any gender-marked second-person phrasing into a neutral form.
 
 CATALOG GROUNDING
 - VERIFIED PRODUCT DATA AVAILABLE FOR THIS TURN: ${hasVerifiedCatalogProducts ? "YES" : "NO"}.
