@@ -124,13 +124,21 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       // first intent parser locks onto "oily".
       const latestText = clean(job.textContent);
       const wantsCleanser = /(?:منظف|غسول|cleanser|nettoyant|gel nettoyant)/i.test(latestText);
+      const wantsSunscreen = /(?:واقي\s*(?:شمسي|الشمس)|كريم\s*شمسي|sun\s*cream|suncream|sunscreen|spf|[ée]cran\s+solaire|cr[èe]me\s+solaire|protection\s+solaire)/i.test(latestText);
+      const hasNamedProductShape = /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-Za-zÀ-ÿ]{4,}\s*[–—-]\s*[A-Za-zÀ-ÿ])/i.test(latestText);
+      const brandLikeRequest = /(?:عندكم|كاين|بغيت|عطيني|je\s+veux|je\s+cherche|vous\s+avez|do\s+you\s+have|i\s+want)/i.test(latestText) &&
+        /[A-Za-zÀ-ÿ]{4,}/.test(latestText);
       const focusedCatalogQuery = wantsCleanser
         ? `cleanser nettoyant ${latestText}`
-        : "";
+        : wantsSunscreen
+          ? `sunscreen solaire spf ${latestText}`
+          : (hasNamedProductShape || brandLikeRequest)
+            ? latestText
+            : "";
 
       const [primaryCatalog, focusedCatalog, products] = await Promise.all([
         searchCatalog(catalogQuery),
-        focusedCatalogQuery ? searchCatalog(focusedCatalogQuery) : Promise.resolve(null),
+        focusedCatalogQuery ? searchCatalog(focusedCatalogQuery, { directRequest: hasNamedProductShape || brandLikeRequest }) : Promise.resolve(null),
         searchProducts(catalogQuery)
       ]);
 
