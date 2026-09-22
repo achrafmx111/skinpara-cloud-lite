@@ -224,6 +224,17 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       }
     }
 
+    // Handle WhatsApp product-card reply buttons deterministically. These are
+    // navigation/purchase-intent signals only; they never create a live order.
+    const buttonIntent = clean(job.textContent).toLowerCase();
+    if (buttonIntent === "skinpara_more_info" || buttonIntent === "voir plus") {
+      assistantMessage = "أكيد. نقدر نعطيك غير المعلومات الموثقة على المنتج، أو نكملو للخطوة الموالية فـالروتين.";
+    } else if (buttonIntent === "skinpara_back_selection" || buttonIntent === "retour") {
+      assistantMessage = "أكيد، نرجعو للاختيار. قول ليا واش بغيتي نشوفو منظف آخر ولا نكملو خطوة أخرى فالروتين.";
+    } else if (buttonIntent === "skinpara_buy_now" || buttonIntent === "acheter maintenant") {
+      assistantMessage = "مزيان. سجلت اهتمامك بالمنتج. قبل أي طلب خاصنا نأكدوا المنتج والكمية والتوفر؛ ما غادي يتدار حتى طلب حقيقي دابا.";
+    }
+
     const outboundEventKey = `kapso:out:${job.messageId}`;
     await store.insertMessage({
       event_key: outboundEventKey,
