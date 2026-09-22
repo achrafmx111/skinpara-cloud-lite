@@ -224,15 +224,74 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       }
     }
 
-    // Handle WhatsApp product-card reply buttons deterministically. These are
-    // navigation/purchase-intent signals only; they never create a live order.
+    // Direct WhatsApp purchase flow (TEST-SAFE). Recover the most recently
+    // verified product card from durable assistant history so button clicks do
+    // not depend on the model remembering product state.
     const buttonIntent = clean(job.textContent).toLowerCase();
+    const recentAssistantText = (history || []).filter(row => row.role === "assistant").slice(-8).map(row => clean(row.content)).join(" ");
+    const recentCatalogProduct = (typeof catalogProducts !== "undefined" ? catalogProducts : []).find(product => {
+      const title = clean(product?.title || product?.name);
+      return title && recentAssistantText.includes(title);
+    }) || (Array.isArray(job.verifiedProductSelections) ? job.verifiedProductSelections[0] : null);
+
+    // Navigation/purchase-intent signals never create a live order. The direct
+    // channel collects quantity and a delivery location, then stops at a
+    // pending-stock handoff until availability is explicitly confirmed.
+    const purchaseStateKey = `skinpara:direct-purchase:${job.conversationKey}`;
+    const getPurchaseState = async () => {
+      if (typeof store.getPurchaseState === "function") return await store.getPurchaseState(job.conversationKey);
+      return null;
+    };
+    const savePurchaseState = async state => {
+      if (typeof store.savePurchaseState === "function") return await store.savePurchaseState(job.conversationKey, state);
+      return state;
+    };
+    const purchaseState = await getPurchaseState();
+    const quantityMatch = clean(job.textContent).match(/^\s*([1-9]|1\d|20)\s*(?:حبة|وحدة|x)?\s*$/i);
+
     if (buttonIntent === "skinpara_more_info" || buttonIntent === "voir plus") {
-      assistantMessage = "أكيد. نقدر نعطيك غير المعلومات الموثقة على المنتج، أو نكملو للخطوة الموالية فـالروتين.";
+      assistantMessage = recentCatalogProduct?.usage || recentCatalogProduct?.ai_summary
+        ? `أكيد. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`
+        : "أكيد. المعلومات الموثقة الإضافية على هاد المنتج ما متوفراش دابا، ونقدر نرجعو للاختيار بلا ما نخمن.";
     } else if (buttonIntent === "skinpara_back_selection" || buttonIntent === "retour") {
-      assistantMessage = "أكيد، نرجعو للاختيار. قول ليا واش بغيتي نشوفو منظف آخر ولا نكملو خطوة أخرى فالروتين.";
+      await savePurchaseState(null);
+      assistantMessage = "أكيد، نرجعو للاختيار. قول ليا واش بغيتي نشوفو منتج آخر ولا نكملو خطوة أخرى فالروتين.";
     } else if (buttonIntent === "skinpara_buy_now" || buttonIntent === "acheter maintenant") {
-      assistantMessage = "مزيان. سجلت اهتمامك بالمنتج. قبل أي طلب خاصنا نأكدوا المنتج والكمية والتوفر؛ ما غادي يتدار حتى طلب حقيقي دابا.";
+      if (!recentCatalogProduct) {
+        assistantMessage = "مزيان. قبل ما نكملو الطلب، اختار المنتج من اللائحة باش نأكدوه بلا غلط.";
+      } else {
+        await savePurchaseState({
+          step: "quantity",
+          product: {
+            id: clean(recentCatalogProduct.id || recentCatalogProduct.catalog_key),
+            title: clean(recentCatalogProduct.title || recentCatalogProduct.name),
+            variant_id: clean(recentCatalogProduct.variant_id || recentCatalogProduct.shopify_variant_id),
+            product_id: clean(recentCatalogProduct.product_id || recentCatalogProduct.shopify_product_id),
+            price: recentCatalogProduct.price ?? null
+          },
+          quantity: null,
+          city: null,
+          address: null,
+          order_mode: "test",
+          updated_at: now()
+        });
+        assistantMessage = `مزيان، أكدنا المنتج: **${clean(recentCatalogProduct.title || recentCatalogProduct.name)}**. شحال من وحدة بغيتي؟ (من 1 حتى 20)`;
+      }
+    } else if (purchaseState?.step === "quantity" && quantityMatch) {
+      const quantity = Number(quantityMatch[1]);
+      await savePurchaseState({ ...purchaseState, step: "city", quantity, updated_at: now() });
+      assistantMessage = `تمام، الكمية: **${quantity}**. فاش مدينة غادي يكون التوصيل؟`;
+    } else if (purchaseState?.step === "city" && clean(job.textContent).length >= 2) {
+      const city = clean(job.textContent).slice(0, 100);
+      await savePurchaseState({ ...purchaseState, step: "address", city, updated_at: now() });
+      assistantMessage = "مزيان. عطيني العنوان أو الحي اللي غادي يكون فيه التوصيل.";
+    } else if (purchaseState?.step === "address" && clean(job.textContent).length >= 3) {
+      const nextState = { ...purchaseState, step: "pending_stock", address: clean(job.textContent).slice(0, 250), updated_at: now() };
+      await savePurchaseState(nextState);
+      const priceLine = nextState.product?.price != null && String(nextState.product.price).trim()
+        ? `\nالثمن الموثق للوحدة: ${String(nextState.product.price).trim()}`
+        : "";
+      assistantMessage = `شكراً. ملخص الطلب التجريبي:\n**${nextState.product.title}**\nالكمية: **${nextState.quantity}**\nالمدينة: **${nextState.city}**\nالعنوان: **${nextState.address}**${priceLine}\n\nدابا الطلب باقي **فانتظار تأكيد التوفر**، وما تدار حتى طلب حقيقي.`;
     }
 
     const outboundEventKey = `kapso:out:${job.messageId}`;
