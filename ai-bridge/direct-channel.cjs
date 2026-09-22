@@ -265,6 +265,32 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
     // Direct WhatsApp purchase flow (TEST-SAFE). Recover the most recently
     // verified product card from durable assistant history so button clicks do
     // not depend on the model remembering product state.
+    // Resolve natural references to previously verified products across a long
+    // conversation ("الثاني", "الأول", "celui-là", "the second one").
+    // Only memory-backed verified products are eligible; ambiguity falls back
+    // to normal conversation instead of guessing.
+    const rememberedProducts = Array.isArray(updatedMemory.recent_products)
+      ? updatedMemory.recent_products.filter(p => p && p.title).slice(-3)
+      : [];
+    const ordinalText = clean(job.textContent).toLowerCase();
+    const ordinalIndex =
+      /(?:الثاني|تاني|2(?:nd)?|deuxi[eè]me|second)/i.test(ordinalText) ? 1 :
+      /(?:الأول|الاول|1(?:st)?|premier|first)/i.test(ordinalText) ? 0 :
+      /(?:الثالث|3(?:rd)?|troisi[eè]me|third)/i.test(ordinalText) ? 2 :
+      -1;
+    const rememberedOrdinalProduct = ordinalIndex >= 0 && rememberedProducts[ordinalIndex]
+      ? rememberedProducts[ordinalIndex]
+      : null;
+    if (rememberedOrdinalProduct && /(?:بغيت|ناخد|نختار|عطيني|هذا|هاد|celui|prendre|choisis|want|take|choose|الأول|الاول|الثاني|تاني|الثالث|first|second|third|premier|deuxi[eè]me|troisi[eè]me)/i.test(ordinalText)) {
+      const title = clean(rememberedOrdinalProduct.title);
+      assistantMessage = /[\u0600-\u06ff]/.test(clean(job.textContent))
+        ? `أكيد، قصدك **${title}**. نكملو عليه.`
+        : /\b(?:je|celui|premier|deuxi[eè]me|troisi[eè]me)\b/i.test(ordinalText)
+          ? `D’accord, tu parles de **${title}**. On continue avec celui-ci.`
+          : `Got it — you mean **${title}**. We can continue with that one.`;
+      job.verifiedProductSelections = [rememberedOrdinalProduct];
+    }
+
     const buttonIntent = clean(job.textContent).toLowerCase();
     const recentAssistantText = (history || []).filter(row => row.role === "assistant").slice(-8).map(row => clean(row.content)).join(" ");
     const recentCatalogProduct = (typeof catalogProducts !== "undefined" ? catalogProducts : []).find(product => {
