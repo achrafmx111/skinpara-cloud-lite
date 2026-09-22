@@ -8,6 +8,8 @@
     "start": "node server.js",
     "test:webhook-security": "node --test test/chatwoot-webhook-security.test.cjs",
     "test:quality": "node quality-gate.cjs",
-    "test:models": "node model-benchmark.cjs"
+    "test:models": "node model-benchmark.cjs",
+    "test:flexible": "node --test test/flexible-conversation.test.cjs",
+    "test": "node --test test/*.test.cjs"
   }
 }
