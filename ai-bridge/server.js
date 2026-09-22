@@ -2695,6 +2695,16 @@ const directStore = {
       body: JSON.stringify({ handoff_required: true, handoff_reason: reason, updated_at: new Date().toISOString() })
     });
   },
+  async getConversationMemory(conversationKey) {
+    const raw = await redisCommand(["GET", `skinpara:conversation-memory:${conversationKey}`]);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  },
+  async saveConversationMemory(conversationKey, state) {
+    const key = `skinpara:conversation-memory:${conversationKey}`;
+    await redisCommand(["SET", key, JSON.stringify(state || {}), "EX", "2592000"]);
+    return state;
+  },
   async getPurchaseState(conversationKey) {
     const raw = await redisCommand(["GET", `skinpara:direct-purchase:${conversationKey}`]);
     if (!raw) return null;
