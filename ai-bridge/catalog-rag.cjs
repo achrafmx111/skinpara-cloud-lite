@@ -209,9 +209,12 @@ function isDirectProductRequest(
     "je cherche",
     "i want",
     "i need",
-    "Ø¹Ø·ÙŠÙ†ÙŠ",
-    "Ø¨ØºÙŠØª",
-    "Ø¨ØºÙŠØª Ù†Ø´Ø±ÙŠ",
+    "عطيني",
+    "بغيت",
+    "بغيت نشري",
+    "عندكم",
+    "كاين",
+    "عندكو",
     "prix",
     "price",
     "Ø«Ù…Ù†"
@@ -244,7 +247,10 @@ function cleanDirectProductQuery(
     /^bghit\s+/i,
     /^baghi\s+/i,
     /^bghina\s+/i,
-    /^ Ø¨ØºÙŠØª\s*/i,
+    /^بغيت\s+/i,
+    /^عطيني\s+/i,
+    /^عندكم\s+/i,
+    /^واش\s+(?:عندكم|كاين)\s+/i,
 
     /^je\s+veux\s+/i,
     /^je\s+cherche\s+/i,
@@ -275,6 +281,19 @@ function cleanDirectProductQuery(
   return q.trim();
 }
 
+
+function extractDirectLookupQuery(value) {
+  let q = cleanDirectProductQuery(value);
+  // Remove conversational wrappers while preserving brand/product/category
+  // words that the catalog actually needs for retrieval.
+  q = q
+    .replace(/^(?:واش\s+)?(?:عندكم|كاين)\s+/i, "")
+    .replace(/^(?:عطيني|وريني|نصحني\s+ب|اقترح\s+ليا)\s+/i, "")
+    .replace(/^(?:chi|شي)\s+/i, "")
+    .replace(/(?:\s+عفاك|\s+من فضلك)[?.!؟]*$/i, "")
+    .trim();
+  return q;
+}
 
 async function searchCatalog(
   query,
@@ -317,9 +336,7 @@ async function searchCatalog(
 
   const q =
     directRequest
-      ? cleanDirectProductQuery(
-          originalQuery
-        )
+      ? extractDirectLookupQuery(originalQuery)
       : originalQuery;
 
 
