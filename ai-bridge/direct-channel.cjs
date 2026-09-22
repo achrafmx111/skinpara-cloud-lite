@@ -343,7 +343,11 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
 
     if (buttonIntent === "skinpara_more_info" || buttonIntent === "voir plus") {
       assistantMessage = recentCatalogProduct?.usage || recentCatalogProduct?.ai_summary
-        ? `أكيد. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`
+        ? localized(
+            `أكيد. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`,
+            `Bien sûr. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`,
+            `Sure. ${clean(recentCatalogProduct.usage || recentCatalogProduct.ai_summary)}`
+          )
         : localized(
             "أكيد. المعلومات الموثقة الإضافية على هاد المنتج ما متوفراش دابا، ونقدر نرجعو للاختيار بلا ما نخمن.",
             "Je n’ai pas d’informations vérifiées supplémentaires sur ce produit pour le moment. On peut revenir au choix sans rien inventer.",
@@ -399,7 +403,7 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       const priceLine = nextState.product?.price != null && String(nextState.product.price).trim()
         ? `\nالثمن الموثق للوحدة: ${String(nextState.product.price).trim()}`
         : "";
-      assistantMessage = `شكراً. ملخص الطلب التجريبي:\n**${nextState.product.title}**\nالكمية: **${nextState.quantity}**\nالمدينة: **${nextState.city}**\nالعنوان: **${nextState.address}**${priceLine}\n\nدابا الطلب باقي **فانتظار تأكيد التوفر**، وما تدار حتى طلب حقيقي.`;
+      assistantMessage = localized(\n        `شكراً. ملخص الطلب التجريبي:\\n**${nextState.product.title}**\\nالكمية: **${nextState.quantity}**\\nالمدينة: **${nextState.city}**\\nالعنوان: **${nextState.address}**${priceLine}\\n\\nدابا الطلب باقي **فانتظار تأكيد التوفر**، وما تدار حتى طلب حقيقي.`,\n        `Merci. Récapitulatif de la demande test :\\n**${nextState.product.title}**\\nQuantité : **${nextState.quantity}**\\nVille : **${nextState.city}**\\nAdresse : **${nextState.address}**${priceLine}\\n\\nLa demande reste **en attente de confirmation de disponibilité**. Aucune commande réelle n’a été créée.`,\n        `Thanks. Test request summary:\\n**${nextState.product.title}**\\nQuantity: **${nextState.quantity}**\\nCity: **${nextState.city}**\\nAddress: **${nextState.address}**${priceLine}\\n\\nThe request is **waiting for availability confirmation**. No real order was created.`\n      );
     }
 
     const outboundEventKey = `kapso:out:${job.messageId}`;
