@@ -2952,6 +2952,25 @@ async function callAI({
     }
   }
 
+  // Exact verified product-detail requests should not depend on a generative
+  // round-trip. If the customer names a catalog title (or its stable core title),
+  // answer from the verified catalog context so product-card selection can proceed
+  // even when the model is unavailable/rejected.
+  const verifiedTitles = [...String(catalogContext || "").matchAll(/^Title:\s*(.+)$/gm)].map(match => match[1].trim());
+  const normalizedRequest = cleanText(userMessage).toLowerCase().replace(/[–—-]/g, " ").replace(/\s+/g, " ");
+  const requestedVerifiedTitle = verifiedTitles.find(title => {
+    const normalizedTitle = cleanText(title).toLowerCase().replace(/[–—-]/g, " ").replace(/\s+/g, " ");
+    const coreTitle = normalizedTitle.replace(/\b\d+\s*(?:ml|g|gr|mg)\b/gi, "").replace(/\s+/g, " ").trim();
+    return normalizedRequest.includes(normalizedTitle) || (coreTitle.length >= 12 && normalizedRequest.includes(coreTitle));
+  });
+  const asksToShowProduct = /(?:وريني|بغيت\s+نشوف|شوفني|montre|voir|show|product|produit|المنتج)/i.test(cleanText(userMessage));
+  if (requestedVerifiedTitle && asksToShowProduct) {
+    if (/[\u0600-\u06ff]/.test(cleanText(userMessage))) {
+      return `أكيد. هذا هو المنتج الموثق فـSkinPara: **${requestedVerifiedTitle}**. نقدر نكمل معاك من هنا بلا ما نزيد حتى معلومة غير مؤكدة.`;
+    }
+    return `Verified SkinPara product: **${requestedVerifiedTitle}**.`;
+  }
+
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
