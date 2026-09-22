@@ -2678,10 +2678,10 @@ const directStore = {
     return Array.isArray(result) && result.length > 0;
   },
   async getHistory(conversationKey) {
-    const rows = await supabaseFetch(`/skinpara_channel_messages?conversation_key=eq.${encodeURIComponent(conversationKey)}&select=role,content,created_at,id&order=created_at.desc,id.desc&limit=20`);
-    // PostgREST applies LIMIT before ordering the returned window. Fetch newest
-    // messages first so long-lived WhatsApp conversations do not get stuck on
-    // their oldest 20 rows, then restore chronological order for the LLM.
+    const rows = await supabaseFetch(`/skinpara_channel_messages?conversation_key=eq.${encodeURIComponent(conversationKey)}&select=role,content,created_at,id&order=created_at.desc,id.desc&limit=60`);
+    // Keep a larger durable conversation window so stable customer facts survive
+    // normal WhatsApp back-and-forth and test traffic; the LLM still receives
+    // only a compact recent slice below.
     return Array.isArray(rows) ? rows.reverse() : [];
   },
   async hasEvent(eventKey) {
