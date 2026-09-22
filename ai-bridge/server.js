@@ -3178,6 +3178,15 @@ ${productContext(safeProducts)}
           return deterministicAdvisorFallback(userMessage, "unverified");
         }
         let finalText = stripUnsupportedProductClaims(sanitizeCustomerResponse(validatedContent.text, contextStr), contextStr);
+        // Keep unknown-gender Darija neutral at the final boundary as well.
+        // This catches common model slips without changing product/catalog facts.
+        finalText = finalText
+          .replace(/بغيتي تعرفي/g, "بغيتي تعرف")
+          .replace(/بغيتي تعرف\b/g, "بغيتي معلومات")
+          .replace(/كتستعملي/g, "كاين عندك")
+          .replace(/واش تقدري/g, "واش ممكن")
+          .replace(/تقدري/g, "ممكن")
+          .replace(/تعرفي/g, "تعرف");
         // A hard sanitizer must never turn a valid AI reply into an empty
         // outbound message. Fail closed with a safe customer-facing response
         // instead of violating the durable message content constraint.
