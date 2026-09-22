@@ -1,10 +1,13 @@
 ﻿const dns = require('node:dns/promises');
 
 const ALLOWED_INTERNAL_HOSTS = [
-  'rails', 
-  // Loopback is required for the embedded catalog service running in the\n  // same AI Bridge container. Keep this exact-host allowlist entry; private\n  // network ranges remain blocked.\n  '127.0.0.1',\n  'localhost',\n  'skinpara-ai-bridge', 
-  'skinpara-catalog-service', 
-  'skinpara-control-center', 
+  'rails',
+  // Loopback is required only for the embedded catalog service in this container.
+  '127.0.0.1',
+  'localhost',
+  'skinpara-ai-bridge',
+  'skinpara-catalog-service',
+  'skinpara-control-center',
   'skinpara-auth-gateway'
 ];
 
