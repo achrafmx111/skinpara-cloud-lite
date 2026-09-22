@@ -200,6 +200,28 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
         customerName: null,
         catalogContext: catalogResult?.context || ""
       });
+
+      // Structured product selection: when the advisor mentions verified catalog
+      // products, capture only exact catalog rows. Downstream WhatsApp rendering
+      // can use these rows instead of trusting free-form model product facts.
+      const mentionedCatalogProducts = catalogProducts.filter(product => {
+        const title = clean(product?.title || product?.name);
+        return title && clean(assistantMessage).includes(title);
+      }).slice(0, 2);
+      if (mentionedCatalogProducts.length) {
+        job.verifiedProductSelections = mentionedCatalogProducts.map(product => ({
+          id: clean(product?.id || product?.catalog_key),
+          title: clean(product?.title || product?.name),
+          brand: clean(product?.brand),
+          category: clean(product?.category),
+          usage: clean(product?.usage),
+          ai_summary: clean(product?.ai_summary),
+          image_url: clean(product?.image_url || product?.image),
+          price: product?.price ?? null,
+          variant_id: clean(product?.variant_id || product?.shopify_variant_id),
+          product_id: clean(product?.product_id || product?.shopify_product_id)
+        }));
+      }
     }
 
     const outboundEventKey = `kapso:out:${job.messageId}`;
@@ -225,7 +247,8 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       content: clean(assistantMessage),
       private: false,
       messageType: "outgoing",
-      handoffRequired
+      handoffRequired,
+      verifiedProducts: Array.isArray(job.verifiedProductSelections) ? job.verifiedProductSelections : []
     });
 
     return { handled: true, handoff_required: handoffRequired, outbound_event_key: outboundEventKey };
