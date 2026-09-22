@@ -150,17 +150,25 @@ function createDirectProcessor({ store, enqueueOutbound, callAdvisor, searchCata
       const hasNamedProductShape = /(?:\b\d+\s*(?:ml|g|gr|mg)\b|[A-Za-zÀ-ÿ]{4,}\s*[–—-]\s*[A-Za-zÀ-ÿ])/i.test(latestText);
       const brandLikeRequest = /(?:عندكم|كاين|بغيت|عطيني|je\s+veux|je\s+cherche|vous\s+avez|do\s+you\s+have|i\s+want)/i.test(latestText) &&
         /[A-Za-zÀ-ÿ]{4,}/.test(latestText);
+      // Customers often switch products with a bare brand/name ("Eucerin ?").
+      // Search that latest short Latin phrase independently from older concern
+      // context so the dominant-intent parser cannot hide the new brand.
+      const compactLatin = latestText.replace(/[?!.,،؟]/g, " ").trim();
+      const shortBrandOrProductLookup =
+        /^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 '&+._-]{2,50}$/.test(compactLatin) &&
+        compactLatin.split(/\s+/).length <= 4 &&
+        !/^(?:bonjour|salut|hello|merci|thanks|ok|okay|oui|non|yes|no|routine|peau\s+grasse|oily\s+skin)$/i.test(compactLatin);
       const focusedCatalogQuery = wantsCleanser
         ? `cleanser nettoyant ${latestText}`
         : wantsSunscreen
           ? `sunscreen solaire spf ${latestText}`
-          : (hasNamedProductShape || brandLikeRequest)
+          : (hasNamedProductShape || brandLikeRequest || shortBrandOrProductLookup)
             ? latestText
             : "";
 
       const [primaryCatalog, focusedCatalog, products] = await Promise.all([
         searchCatalog(catalogQuery),
-        focusedCatalogQuery ? searchCatalog(focusedCatalogQuery, { directRequest: hasNamedProductShape || brandLikeRequest }) : Promise.resolve(null),
+        focusedCatalogQuery ? searchCatalog(focusedCatalogQuery, { directRequest: hasNamedProductShape || brandLikeRequest || shortBrandOrProductLookup }) : Promise.resolve(null),
         searchProducts(catalogQuery)
       ]);
 
