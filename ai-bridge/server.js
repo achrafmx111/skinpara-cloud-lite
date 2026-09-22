@@ -2694,6 +2694,20 @@ const directStore = {
       headers: { "Prefer": "return=minimal" },
       body: JSON.stringify({ handoff_required: true, handoff_reason: reason, updated_at: new Date().toISOString() })
     });
+  },
+  async getPurchaseState(conversationKey) {
+    const raw = await redisCommand(["GET", `skinpara:direct-purchase:${conversationKey}`]);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  },
+  async savePurchaseState(conversationKey, state) {
+    const key = `skinpara:direct-purchase:${conversationKey}`;
+    if (!state) {
+      await redisCommand(["DEL", key]);
+      return null;
+    }
+    await redisCommand(["SET", key, JSON.stringify(state), "EX", "604800"]);
+    return state;
   }
 };
 
