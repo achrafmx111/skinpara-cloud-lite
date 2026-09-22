@@ -3174,6 +3174,13 @@ ${productContext(safeProducts)}
           return deterministicAdvisorFallback(userMessage, "unverified");
         }
         let finalText = stripUnsupportedProductClaims(sanitizeCustomerResponse(validatedContent.text, contextStr), contextStr);
+        // A hard sanitizer must never turn a valid AI reply into an empty
+        // outbound message. Fail closed with a safe customer-facing response
+        // instead of violating the durable message content constraint.
+        if (!cleanText(finalText)) {
+          log("advisor_grounding_sanitized_empty", { model, reason: "unsupported_product_claims" });
+          finalText = deterministicAdvisorFallback(userMessage, "unverified");
+        }
         if (finalText.length > 1200) {
           const cut = finalText.slice(0, 1200);
           const boundary = Math.max(cut.lastIndexOf("\n"), cut.lastIndexOf(". "), cut.lastIndexOf("؟"), cut.lastIndexOf("! "));
