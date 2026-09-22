@@ -313,6 +313,56 @@ function understandQuery(
 
     {
       canonical:
+        "sunscreen",
+
+      phrases:[
+        "sunscreen",
+        "sun cream",
+        "suncream",
+        "spf",
+        "ecran solaire",
+        "écran solaire",
+        "creme solaire",
+        "crème solaire",
+        "protection solaire",
+        "واقي شمسي",
+        "واقي الشمس",
+        "كريم شمسي",
+        "ضد الشمس"
+      ],
+
+      search:[
+        "sunscreen",
+        "solaire",
+        "spf",
+        "sun"
+      ]
+    },
+
+
+    {
+      canonical:
+        "cleanser",
+
+      phrases:[
+        "cleanser",
+        "nettoyant",
+        "gel nettoyant",
+        "face wash",
+        "غسول",
+        "منظف"
+      ],
+
+      search:[
+        "nettoyant",
+        "cleanser",
+        "gel nettoyant"
+      ]
+    },
+
+
+    {
+      canonical:
         "redness",
 
       phrases:[
@@ -743,7 +793,9 @@ async function searchCatalog(
         "sensitive",
         "dry",
         "hydration",
-        "redness"
+        "redness",
+        "sunscreen",
+        "cleanser"
       ]);
 
 
