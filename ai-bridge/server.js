@@ -2903,8 +2903,12 @@ async function callAI({
   catalogContext
 }) {
   const safeProducts = (products || []).slice(0, 3);
+  // catalogContext is built only from rows returned by the verified SkinPara
+  // catalog service. Match its literal "Title: ..." lines; the previous
+  // pattern accidentally looked for the characters "\\s" and therefore
+  // treated valid catalog results as empty.
   const hasVerifiedCatalogProducts =
-    safeProducts.length > 0 || /^Title:\\s*.+$/m.test(String(catalogContext || ""));
+    safeProducts.length > 0 || /^Title:\s*.+$/m.test(String(catalogContext || ""));
   const deterministicComparison = deterministicCatalogComparison(userMessage, catalogContext);
   if (deterministicComparison) return deterministicComparison;
   const ordinalFollowup = deterministicOrdinalFollowup(userMessage, catalogContext);
