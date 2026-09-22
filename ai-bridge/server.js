@@ -2780,6 +2780,27 @@ function sanitizeCustomerResponse(text, contextStr = "") {
   return verifiedLines.join('\n');
 }
 
+function stripUnsupportedProductClaims(text, contextStr = "") {
+  const verified = cleanText(contextStr).toLowerCase();
+  const patterns = [
+    /كينقي(?:\s+البشرة)?\s+بعمق/i,
+    /بلا\s+ما\s+ينشف(?:ها|\s+البشرة)?/i,
+    /مناسب(?:ة)?\s+لجميع\s+أنواع\s+البشرة/i,
+    /كي(?:ساعد\s+على\s+)?تنقية\s+البشرة/i,
+    /كتنقي\s+بلطف/i,
+    /توحيد\s+لون\s+البشرة/i,
+    /كيعالج\s+الحبوب\s+بسرعة/i,
+    /كيقلل\s+من\s+ظهورها/i
+  ];
+  return String(text || "").split('\n').filter(line => {
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match && !verified.includes(cleanText(match[0]).toLowerCase())) return false;
+    }
+    return true;
+  }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function deterministicAdvisorFallback(userMessage, kind = "unavailable") {
   const value = cleanText(userMessage);
   const lower = value.toLowerCase();
@@ -3152,7 +3173,7 @@ ${productContext(safeProducts)}
           log("catalog_grounding_blocked", { reason: "no_verified_product_data" });
           return deterministicAdvisorFallback(userMessage, "unverified");
         }
-        let finalText = sanitizeCustomerResponse(validatedContent.text, contextStr);
+        let finalText = stripUnsupportedProductClaims(sanitizeCustomerResponse(validatedContent.text, contextStr), contextStr);
         if (finalText.length > 1200) {
           const cut = finalText.slice(0, 1200);
           const boundary = Math.max(cut.lastIndexOf("\n"), cut.lastIndexOf(". "), cut.lastIndexOf("؟"), cut.lastIndexOf("! "));
